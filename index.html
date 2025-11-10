@@ -89,7 +89,7 @@
     .pagination{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px}
     .empty{padding:16px;text-align:center;color:var(--muted);font-style:italic}
     footer{ padding:12px 14px;text-align:center;color:var(--muted);font-size:13px;margin-top:0;flex-shrink:0;border-top:1px solid rgba(15,23,36,0.03);background:transparent }
-    #versionInfo{display:block;margin-top:6px;color:var(--muted);font-size:13px}
+    #versionInfo{display:inline-block;margin-left:8px;color:var(--muted);font-size:13px}
     .icon{width:16px;height:16px;display:inline-block;vertical-align:middle}
     .__ia-tooltip { position: fixed; z-index: 9999; background: var(--tooltip-bg); color: var(--tooltip-fg); padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.98); transition: opacity .12s ease, transform .12s ease; box-shadow: 0 6px 20px rgba(2,6,23,0.45); max-width: 72vw; white-space: nowrap; visibility: hidden; }
     .__ia-tooltip.show { opacity: 1; transform: translateY(0) scale(1); visibility: visible; }
@@ -152,632 +152,482 @@
 
   </div>
 
+  
   <footer>
-    Invitea · Panel de administración
-    <span id="versionInfo" aria-live="polite" aria-atomic="true">Publicado: —</span>
+    Invitea · Panel de administración · 
+    <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
+      Versión 1.0.0 · Publicado: 10 de november de 2025
+    </span>
   </footer>
+
 
   <div id="__ia-tooltip" class="__ia-tooltip" role="status" aria-live="polite" style="display:none"></div>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-  import {
-    getFirestore, collection, query, orderBy, limit, getDocs,
-    startAfter, endBefore, limitToLast, doc, getDoc,
-    updateDoc, deleteDoc, where, getCountFromServer, onSnapshot
-  } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+import {
+  getFirestore, collection, query, orderBy, limit, getDocs,
+  startAfter, endBefore, limitToLast, doc, getDoc,
+  updateDoc, deleteDoc, where, getCountFromServer, onSnapshot
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-  (function(){
-    const firebaseConfig = {
-      apiKey: "AIzaSyCTh8kPdvu-6Z5_cckNts22VrhdUTLVspM",
-      authDomain: "invitea-f7331.firebaseapp.com",
-      projectId: "invitea-f7331",
-      storageBucket: "invitea-f7331.firebasestorage.app",
-      messagingSenderId: "145115727672",
-      appId: "1:145115727672:web:d1d89c20bf946b9e2663cd",
-      measurementId: "G-8JS1MDZVGQ"
-    };
+(async function(){
+  const firebaseConfig = {
+    apiKey: "AIzaSyCTh8kPdvu-6Z5_cckNts22VrhdUTLVspM",
+    authDomain: "invitea-f7331.firebaseapp.com",
+    projectId: "invitea-f7331",
+    storageBucket: "invitea-f7331.firebasestorage.app",
+    messagingSenderId: "145115727672",
+    appId: "1:145115727672:web:d1d89c20bf946b9e2663cd",
+    measurementId: "G-8JS1MDZVGQ"
+  };
+  if (!firebaseConfig || !firebaseConfig.projectId) {
+    document.getElementById('listBody').innerHTML = '<div class="empty">Configura firebaseConfig en el HTML para conectar al panel.</div>';
+    console.warn('firebaseConfig no configurado.');
+    return;
+  }
 
-    if (!firebaseConfig || !firebaseConfig.projectId) {
-      document.getElementById('listBody').innerHTML = '<div class="empty">Configura firebaseConfig en el HTML para conectar al panel.</div>';
-      console.warn('firebaseConfig no configurado.');
-      return;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const pageSize = 8;
+  let currentPage = 1;
+  let firstDocSnap = null;
+  let lastDocSnap = null;
+  let currentItems = [];
+
+  // UI refs
+  const listBody = document.getElementById('listBody');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const pageNumber = document.getElementById('pageNumber');
+  const searchInput = document.getElementById('search');
+  const exportBtn = document.getElementById('exportCsv');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const totalCount = document.getElementById('totalCount');
+  const pendingCount = document.getElementById('pendingCount');
+  const pageTotal = document.getElementById('pageTotal');
+  const lastUpdate = document.getElementById('lastUpdate');
+  const withPlan = document.getElementById('withPlan');
+  const versionInfo = document.getElementById('versionInfo');
+  const tooltip = document.getElementById('__ia-tooltip');
+
+  // --- Utilities ---
+  function escapeHtml(s){
+    if(s == null) return '';
+    return String(s)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'", '&#39;');
+  }
+  function fmtTimestamp(ts){
+    if(!ts) return '—';
+    try{
+      const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts || Date.now());
+      if(isNaN(d)) return '—';
+      return d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    } catch(e){ return '—'; }
+  }
+  function docDate(d){
+    if(!d) return null;
+    if(d.createdAt && typeof d.createdAt.toDate === 'function') {
+      try { return d.createdAt.toDate(); } catch(e){ }
     }
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Page size reducido para compactar vista
-    const pageSize = 8;
-    let currentPage = 1;
-    let firstDocSnap = null;
-    let lastDocSnap = null;
-    let currentItems = [];
-
-    // unsubcribers for realtime listeners
-    let unsubPageListener = null;
-    let unsubTotalListener = null;
-    let unsubPendingListener = null;
-
-    // UI refs
-    const listBody = document.getElementById('listBody');
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    const pageNumber = document.getElementById('pageNumber');
-    const searchInput = document.getElementById('search');
-    const exportBtn = document.getElementById('exportCsv');
-    const refreshBtn = document.getElementById('refreshBtn');
-
-    const totalCount = document.getElementById('totalCount');
-    const pendingCount = document.getElementById('pendingCount');
-    const pageTotal = document.getElementById('pageTotal');
-    const lastUpdate = document.getElementById('lastUpdate');
-    const withPlan = document.getElementById('withPlan');
-    const versionInfo = document.getElementById('versionInfo');
-
-    const tooltip = document.getElementById('__ia-tooltip');
-
-    function fmtTimestamp(ts){
-      if(!ts) return '—';
-      try{
-        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts || Date.now());
-        if(isNaN(d)) return '—';
-        return d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-      } catch(e){ return '—'; }
+    if(d.ts && typeof d.ts.toDate === 'function') {
+      try { return d.ts.toDate(); } catch(e){ }
     }
-    function fmtDateShort(ts){
-      if(!ts) return '—';
-      try{
-        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts);
-        if(isNaN(d)) return '—';
-        const dd = String(d.getDate()).padStart(2,'0');
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const yyyy = d.getFullYear();
-        return `${dd}/${mm}/${yyyy}`;
-      } catch(e){ return '—'; }
+    if(d.date_iso){
+      const dt = new Date(d.date_iso);
+      if(!isNaN(dt)) return dt;
     }
-    function initials(name){
-      if(!name) return 'U';
-      return name.trim().split(/\s+/).map(s => s[0] || '').slice(0,2).join('').toUpperCase();
-    }
+    return null;
+  }
+  function initials(name){
+    if(!name) return 'U';
+    return name.trim().split(/\s+/).map(s => s[0] || '').slice(0,2).join('').toUpperCase();
+  }
+  function normalizePlan(raw){
+    if(!raw) return 'Sin plan';
+    const s = String(raw).toLowerCase();
+    if(s.includes('bas') || s.includes('bás') || s.includes('basico') ) return 'Básico';
+    if(s.includes('estan') || s.includes('estandar') || s.includes('estánd') ) return 'Estándar';
+    if(s.includes('premium') || s.includes('prem') ) return 'Premium';
+    return 'Sin plan';
+  }
 
-    document.querySelectorAll('button').forEach(btn => {
-      if (!btn.hasAttribute('type')) btn.setAttribute('type','button');
-      if(btn.dataset && btn.dataset.tooltip && !btn.hasAttribute('title')) btn.setAttribute('title', btn.dataset.tooltip);
+  // --- Tooltip (delegated) ---
+  let tooltipVisible = false;
+  function showTooltip(text, rect){
+    if(!text || window.matchMedia('(max-width:720px)').matches) return;
+    tooltip.textContent = text;
+    tooltip.style.display = 'block';
+    tooltip.style.visibility = 'hidden';
+    tooltip.classList.remove('show');
+    requestAnimationFrame(() => {
+      const tooltipW = tooltip.offsetWidth;
+      const tooltipH = tooltip.offsetHeight;
+      const margin = 6;
+      const preferAbove = rect.top > 80;
+      let top = preferAbove ? window.scrollY + rect.top - tooltipH - margin : window.scrollY + rect.bottom + margin;
+      let left = window.scrollX + rect.left + (rect.width / 2) - (tooltipW / 2);
+      const pad = 6;
+      left = Math.max(pad, Math.min(left, window.scrollX + document.documentElement.clientWidth - tooltipW - pad));
+      tooltip.style.top = top + 'px';
+      tooltip.style.left = left + 'px';
+      tooltip.style.visibility = 'visible';
+      requestAnimationFrame(()=> tooltip.classList.add('show'));
+      tooltipVisible = true;
+    });
+  }
+  function hideTooltip(){
+    tooltip.classList.remove('show');
+    tooltipVisible = false;
+    setTimeout(()=> { if(!tooltipVisible) tooltip.style.display = 'none'; }, 140);
+  }
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest && e.target.closest('[data-tooltip]');
+    if(t){
+      showTooltip(t.getAttribute('data-tooltip') || t.getAttribute('title') || '', t.getBoundingClientRect());
+    } else {
+      hideTooltip();
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    const t = e.target.closest && e.target.closest('[data-tooltip]');
+    if(!t) hideTooltip();
+  });
+
+  // --- Counts en tiempo real con onSnapshot ---
+function pluralize(n, singular, plural) {
+  return n === 1 ? singular : plural;
+}
+
+function initRealtimeCounts() {
+  try {
+    const colRef = collection(db, 'contact_requests');
+    const pendingQ = query(colRef, where('processed', '==', false));
+
+    // Total en tiempo real
+    onSnapshot(colRef, (snap) => {
+      const total = snap.size;
+      if (totalCount) totalCount.textContent = `${total} ${pluralize(total, 'solicitud', 'solicitudes')}`;
+    }, (err) => {
+      console.warn('Realtime total onSnapshot error:', err);
     });
 
-    let tooltipVisible = false;
-    let tooltipHideTimer = null;
-    function showTooltipFor(target){
-      const text = target.getAttribute('data-tooltip') || target.getAttribute('title') || '';
-      if(!text) return hideTooltip();
-      // hide tooltips on small screens (touch-first)
-      if(window.matchMedia && window.matchMedia('(max-width:720px)').matches) return;
-      tooltip.textContent = text;
-      tooltip.style.display = 'block';
-      tooltip.style.visibility = 'hidden';
-      tooltip.classList.remove('show');
-      requestAnimationFrame(() => {
-        const rect = target.getBoundingClientRect();
-        const margin = 6;
-        const preferAbove = rect.top > 80;
-        const tooltipW = tooltip.offsetWidth;
-        const tooltipH = tooltip.offsetHeight;
-        let top, left;
-        if(preferAbove){
-          top = window.scrollY + rect.top - tooltipH - margin;
-        } else {
-          top = window.scrollY + rect.bottom + margin;
-        }
-        left = window.scrollX + rect.left + (rect.width / 2) - (tooltipW / 2);
-        const pad = 6;
-        left = Math.max(pad, Math.min(left, window.scrollX + document.documentElement.clientWidth - tooltipW - pad));
-        tooltip.style.top = (top) + 'px';
-        tooltip.style.left = (left) + 'px';
-        tooltip.style.visibility = 'visible';
-        requestAnimationFrame(() => tooltip.classList.add('show'));
-        tooltipVisible = true;
-      });
-      clearTimeout(tooltipHideTimer);
-    }
-    function hideTooltipSoon(delay=100){
-      clearTimeout(tooltipHideTimer);
-      tooltipHideTimer = setTimeout(() => hideTooltip(), delay);
-    }
-    function hideTooltip(){
-      tooltip.classList.remove('show');
-      tooltipVisible = false;
-      setTimeout(()=> { if(!tooltipVisible) tooltip.style.display = 'none'; }, 140);
-    }
-    function attachTooltipHandlers(root=document){
-      root.querySelectorAll('[data-tooltip]').forEach(el => {
-        if(el.__ia_tooltip_bound) return;
-        el.__ia_tooltip_bound = true;
-        el.addEventListener('mouseenter', () => showTooltipFor(el));
-        el.addEventListener('mouseleave', () => hideTooltipSoon());
-        el.addEventListener('focus', () => showTooltipFor(el), true);
-        el.addEventListener('blur', () => hideTooltipSoon(), true);
-      });
-    }
+    // Sin procesar en tiempo real
+    onSnapshot(pendingQ, (snap) => {
+      const pending = snap.size;
+      if (pendingCount) pendingCount.textContent = `${pending} ${pluralize(pending, 'sin procesar', 'sin procesar')}`;
+    }, (err) => {
+      console.warn('Realtime pending onSnapshot error:', err);
+    });
+  } catch (err) {
+    console.warn('Error inicializando conteos en tiempo real:', err);
+  }
+}
 
-    function normalizePlan(raw){
-      if(!raw) return 'Sin plan';
-      const s = String(raw).toLowerCase();
-      if(s.includes('bas') || s.includes('bás') || s.includes('basico') ) return 'Básico';
-      if(s.includes('estan') || s.includes('estandar') || s.includes('estánd') ) return 'Estándar';
-      if(s.includes('premium') || s.includes('prem') ) return 'Premium';
-      return 'Sin plan';
-    }
 
-    // Utility to normalize date fields into a JS Date or null
-    function docDate(d){
-      if(!d) return null;
-      if(d.createdAt && typeof d.createdAt.toDate === 'function') {
-        try { return d.createdAt.toDate(); } catch(e){ /* ignore */ }
-      }
-      if(d.ts && typeof d.ts.toDate === 'function') {
-        try { return d.ts.toDate(); } catch(e){ /* ignore */ }
-      }
-      if(d.date_iso){
-        const dt = new Date(d.date_iso);
-        if(!isNaN(dt)) return dt;
-      }
-      return null;
-    }
+  // --- Render optimized: build rows as HTML and set innerHTML once ---
+  function rowHtml(item){
+    const id = escapeHtml(item.id);
+    const d = item.data || {};
+    const name = escapeHtml(d.name || d.nombre || 'Sin nombre');
+    const avatarText = escapeHtml(initials(d.name || d.nombre || ''));
+    const plan = escapeHtml(normalizePlan(d.selectedPlan));
+    const status = d.processed ? 'Procesado' : 'Sin procesar';
+    const statusClass = d.processed ? 'processed' : 'pending';
+    const email = escapeHtml(d.email || '—');
+    const phone = escapeHtml(d.phone || '—');
+    const type = escapeHtml(d.type || d.docType || d.documentType || d.document_type || '—');
+    const date = escapeHtml(d.date_ddmmyyyy || (d.date_iso ? new Date(d.date_iso).toLocaleDateString('es-MX') : (docDate(d) ? docDate(d).toLocaleDateString('es-MX') : '—')));
+    const created = escapeHtml(fmtTimestamp(d.createdAt || d.ts));
 
-    function createMetaLines(d){
-      const container = document.createElement('div');
-      container.className = 'meta-lines';
-      // Tipo
-      const typeLine = document.createElement('div');
-      const typeLabel = document.createElement('span'); typeLabel.className = 'label';
-      typeLabel.textContent = 'Tipo:';
-      const typeValue = document.createElement('span'); typeValue.className = 'value';
-      const val = d.type || d.docType || d.documentType || d.document_type || '—';
-      typeValue.textContent = val || '—';
-      typeLine.appendChild(typeLabel);
-      typeLine.appendChild(typeValue);
-      // Email
-      const emailLine = document.createElement('div');
-      const emailLabel = document.createElement('span'); emailLabel.className = 'label';
-      emailLabel.textContent = 'Correo:';
-      const emailValue = document.createElement('span'); emailValue.className = 'value';
-      emailValue.textContent = d.email || '—';
-      emailLine.appendChild(emailLabel);
-      emailLine.appendChild(emailValue);
-      // Phone
-      const phoneLine = document.createElement('div');
-      const phoneLabel = document.createElement('span'); phoneLabel.className = 'label';
-      phoneLabel.textContent = 'Teléfono:';
-      const phoneValue = document.createElement('span'); phoneValue.className = 'value';
-      phoneValue.textContent = d.phone || '—';
-      phoneLine.appendChild(phoneLabel);
-      phoneLine.appendChild(phoneValue);
-      // Date
-      const dateLine = document.createElement('div');
-      const dateLabel = document.createElement('span'); dateLabel.className = 'label';
-      dateLabel.textContent = 'Fecha:';
-      const dateValue = document.createElement('span'); dateValue.className = 'value';
-      if(d.date_ddmmyyyy) dateValue.textContent = d.date_ddmmyyyy;
-      else if(d.date_iso) {
-        try{
-          const dt = new Date(d.date_iso);
-          if(!isNaN(dt)) dateValue.textContent = fmtDateShort(dt);
-          else dateValue.textContent = '—';
-        }catch(e){ dateValue.textContent = '—'; }
-      } else {
-        const dt = docDate(d);
-        dateValue.textContent = dt ? fmtDateShort(dt) : fmtDateShort(d.createdAt || d.ts);
-      }
-      dateLine.appendChild(dateLabel);
-      dateLine.appendChild(dateValue);
+    // Inline small SVG icons as strings (faster than createElementNS)
+    const checkSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    const trashSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>';
 
-      container.appendChild(typeLine);
-      container.appendChild(emailLine);
-      container.appendChild(phoneLine);
-      container.appendChild(dateLine);
-      return container;
-    }
+    return `
+      <div class="row-item" role="listitem" data-id="${id}" tabindex="0" aria-labelledby="name-${id}">
+        <div class="avatar" aria-hidden="true">${avatarText}</div>
+        <div class="meta">
+          <div class="name" id="name-${id}">${name}</div>
+          <div class="meta-lines">
+            <div><span class="label">Tipo:</span><span class="value">${type}</span></div>
+            <div><span class="label">Correo:</span><span class="value">${email}</span></div>
+            <div><span class="label">Teléfono:</span><span class="value">${phone}</span></div>
+            <div><span class="label">Fecha:</span><span class="value">${date}</span></div>
+          </div>
+        </div>
+        <div class="actions">
+          <div class="badges">
+            <div class="badge plan">${plan}</div>
+            <div class="badge status ${statusClass}">${status}</div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn row mark" data-action="toggle-processed" data-id="${id}" data-tooltip="${d.processed ? 'Marcar como no procesado' : 'Marcar como procesado'}" aria-pressed="${d.processed ? 'true' : 'false'}">${checkSvg}<span class="mark-label">${d.processed ? 'No' : 'OK'}</span></button>
+            <button class="btn row danger" data-action="delete" data-id="${id}" data-tooltip="Eliminar esta solicitud">${trashSvg}Borrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
-    function createIcon(name){
-      const ns = "http://www.w3.org/2000/svg";
-      const svg = document.createElementNS(ns,'svg');
-      svg.setAttribute('class','icon');
-      svg.setAttribute('viewBox','0 0 24 24');
-      svg.setAttribute('fill','none');
-      svg.setAttribute('stroke','currentColor');
-      svg.setAttribute('stroke-width','1.6');
-      svg.setAttribute('stroke-linecap','round');
-      svg.setAttribute('stroke-linejoin','round');
-      if(name === 'check'){
-        const path = document.createElementNS(ns,'path');
-        path.setAttribute('d','M20 6L9 17l-5-5');
-        svg.appendChild(path);
-      } else if(name === 'trash'){
-        const poly = document.createElementNS(ns,'polyline');
-        poly.setAttribute('points','3 6 5 6 21 6');
-        const p1 = document.createElementNS(ns,'path');
-        p1.setAttribute('d','M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6');
-        const p2 = document.createElementNS(ns,'path');
-        p2.setAttribute('d','M10 11v6');
-        const p3 = document.createElementNS(ns,'path');
-        p3.setAttribute('d','M14 11v6');
-        svg.appendChild(poly);
-        svg.appendChild(p1);
-        svg.appendChild(p2);
-        svg.appendChild(p3);
-      }
-      return svg;
+  function render(items){
+    if(!items || items.length === 0){
+      listBody.innerHTML = '<div class="empty">No hay solicitudes en esta página.</div>';
+      pageTotal.textContent = '0';
+      withPlan.textContent = '0';
+      lastUpdate.textContent = '—';
+      
+      currentItems = [];
+      return;
     }
+    let planCount = 0;
+    let latest = null;
+    // build HTML
+    const html = items.map(entry => {
+      if (entry.data && entry.data.selectedPlan) planCount++;
+      const createdDt = docDate(entry.data);
+      if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
+      return rowHtml(entry);
+    }).join('');
+    listBody.innerHTML = html;
+    pageTotal.textContent = String(items.length);
+    withPlan.textContent = String(planCount);
+    lastUpdate.textContent = latest ? latest.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    currentItems = items;
 
-    function sanitizeForCsv(s){
-      if(s == null) return '';
-      const str = String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
-      if(/^[=+\-@]/.test(str)) return `'${str}`;
-      return str;
+    // init footer versioner with top-most item
+    const firstCreated = docDate(items[0].data) || null;
+    if(firstCreated){
+      const human = firstCreated.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      
+    } else {
+      
     }
+  }
 
-    function setVersionInfo(dateObj, id, title){
-      if(!dateObj){
-        versionInfo.textContent = 'Publicado: —';
-        versionInfo.dataset.pubId = '';
-        return;
-      }
-      try {
-        const d = (typeof dateObj.toDate === 'function') ? dateObj.toDate() : new Date(dateObj);
-        if(isNaN(d)) { versionInfo.textContent = 'Publicado: —'; versionInfo.dataset.pubId = ''; return; }
-        const human = d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-        const iso = d.toISOString();
-        versionInfo.textContent = `Publicado: ${human} · (${iso})`;
-        versionInfo.dataset.pubId = id || '';
-        versionInfo.title = title ? `Publicación: ${title}` : '';
-      } catch(e){
-        versionInfo.textContent = 'Publicado: —';
-        versionInfo.dataset.pubId = '';
-      }
-    }
+  // --- Pagination helpers (keep onSnapshot for page) ---
+  let unsubPageListener = null;
+  function cleanupPageListener(){ if(typeof unsubPageListener === 'function'){ unsubPageListener(); unsubPageListener = null; } }
 
-    // ---------- Real-time helpers ----------
-    function cleanupPageListener(){
-      if(typeof unsubPageListener === 'function'){ unsubPageListener(); unsubPageListener = null; }
-    }
-    function cleanupCountsListeners(){
-      if(typeof unsubTotalListener === 'function'){ unsubTotalListener(); unsubTotalListener = null; }
-      if(typeof unsubPendingListener === 'function'){ unsubPendingListener(); unsubPendingListener = null; }
-    }
+  function listenToPageQuery(q){
+    cleanupPageListener();
+    listBody.innerHTML = '<div class="empty">Cargando…</div>';
+    unsubPageListener = onSnapshot(q, snap => {
+      const docs = snap.docs;
+      const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
+      firstDocSnap = docs[0] || null;
+      lastDocSnap = docs[docs.length - 1] || null;
+      render(docsArr);
+      updatePagination(docsArr.length === pageSize);
+    }, err => {
+      console.error('Error listening page', err);
+      listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
+    });
+  }
 
-    // Listen to counts in real-time (ATTENCIÓN: escuchar toda la colección puede ser costoso en colecciones grandes)
-    function listenCountsRealtime(){
-      try {
-        const colRef = collection(db, 'contact_requests');
-        // total
-        cleanupCountsListeners();
-        unsubTotalListener = onSnapshot(query(colRef), snap => {
-          totalCount.textContent = `${snap.size} solicitudes`;
-        }, err => {
-          console.warn('Error total count snapshot', err);
-        });
-        // pending (processed == false)
-        unsubPendingListener = onSnapshot(query(colRef, where('processed','==', false)), snap => {
-          pendingCount.textContent = `${snap.size} sin procesar`;
-        }, err => {
-          console.warn('Error pending count snapshot', err);
-        });
-      } catch(e){
-        console.warn('No se pudo iniciar listeners para conteos', e);
-      }
-    }
+  function buildPageQuery(startAfterDoc){
+    const colRef = collection(db, 'contact_requests');
+    if(!startAfterDoc) return query(colRef, orderBy('createdAt','desc'), limit(pageSize));
+    return query(colRef, orderBy('createdAt','desc'), startAfter(startAfterDoc), limit(pageSize));
+  }
 
-    // Listen to a page query in realtime; q must be a Firestore query
-    function listenToPageQuery(q){
+  function updatePagination(hasNext){
+    nextBtn.disabled = !hasNext;
+    prevBtn.disabled = (currentPage <= 1);
+  }
+
+  async function goToFirstPage(){
+    currentPage = 1;
+    pageNumber.textContent = currentPage;
+    const q = buildPageQuery(null);
+    listenToPageQuery(q);
+  }
+  async function goToNextPage(){
+    if(!lastDocSnap) return;
+    currentPage++;
+    pageNumber.textContent = currentPage;
+    const q = buildPageQuery(lastDocSnap);
+    listenToPageQuery(q);
+  }
+  async function goToPrevPage(){
+    const colRef = collection(db, 'contact_requests');
+    try {
+      currentPage = Math.max(1, currentPage - 1);
+      pageNumber.textContent = currentPage;
       cleanupPageListener();
+      const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
       listBody.innerHTML = '<div class="empty">Cargando…</div>';
       unsubPageListener = onSnapshot(q, snap => {
         const docs = snap.docs;
         const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
-        // update pagination anchors for first/last snapshots
         firstDocSnap = docs[0] || null;
         lastDocSnap = docs[docs.length - 1] || null;
-        currentItems = docsArr;
         render(docsArr);
-        updatePagination(docs.length === pageSize);
+        updatePagination(true);
       }, err => {
-        console.error('Error listening page', err);
+        console.error('Error loading prev page', err);
         listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
       });
+    } catch(err){
+      console.error('Error goToPrevPage', err);
     }
+  }
 
-    // Helper to build page query for given cursor (startAfterDoc may be null)
-    function buildPageQuery(startAfterDoc){
-      const colRef = collection(db, 'contact_requests');
-      if(!startAfterDoc) return query(colRef, orderBy('createdAt','desc'), limit(pageSize));
-      return query(colRef, orderBy('createdAt','desc'), startAfter(startAfterDoc), limit(pageSize));
-    }
-
-    // ---------- Render function (same lógica que antes) ----------
-    function render(items){
-      listBody.innerHTML = '';
-      if(!items || items.length === 0){
-        listBody.innerHTML = '<div class="empty">No hay solicitudes en esta página.</div>';
-        pageTotal.textContent = '0';
-        withPlan.textContent = '0';
-        lastUpdate.textContent = '—';
-        setVersionInfo(null);
-        return;
-      }
-
-      let planCount = 0;
-      let latest = null;
-
-      items.forEach(entry => {
-        const id = entry.id;
-        const d = entry.data;
-        if (d.selectedPlan) planCount++;
-
-        const createdDt = docDate(d);
-        if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
-
-        const item = document.createElement('div');
-        item.className = 'row-item';
-        item.setAttribute('role','listitem');
-        item.dataset.id = id;
-        item.setAttribute('tabindex', '0');
-        item.setAttribute('aria-labelledby', `name-${id}`);
-
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        avatar.textContent = initials(d.name || d.nombre || d.name);
-
-        const meta = document.createElement('div'); meta.className = 'meta';
-        const nameEl = document.createElement('div'); nameEl.className = 'name';
-        nameEl.id = `name-${id}`;
-        nameEl.textContent = d.name || d.nombre || 'Sin nombre';
-        const metaLines = createMetaLines(d);
-        meta.appendChild(nameEl);
-        meta.appendChild(metaLines);
-
-        const actions = document.createElement('div'); actions.className = 'actions';
-
-        const badges = document.createElement('div'); badges.className = 'badges';
-        const normalized = normalizePlan(d.selectedPlan);
-        const planBadge = document.createElement('div'); planBadge.className = 'badge plan';
-        planBadge.textContent = normalized;
-        const statusBadge = document.createElement('div'); statusBadge.className = 'badge status ' + (d.processed ? 'processed' : 'pending');
-        statusBadge.textContent = d.processed ? 'Procesado' : 'Sin procesar';
-        badges.appendChild(planBadge);
-        badges.appendChild(statusBadge);
-
-        const actionButtons = document.createElement('div'); actionButtons.className = 'action-buttons';
-
-        const markBtn = document.createElement('button');
-        markBtn.className = 'btn row mark';
-        markBtn.type = 'button';
-        markBtn.setAttribute('data-tooltip', d.processed ? 'Marcar como no procesado' : 'Marcar como procesado');
-        markBtn.setAttribute('aria-label', d.processed ? 'Marcar no procesado' : 'Marcar procesado');
-        markBtn.setAttribute('aria-pressed', String(!!d.processed));
-        markBtn.appendChild(createIcon('check'));
-        const markLabel = document.createElement('span');
-        markLabel.className = 'mark-label';
-        markLabel.textContent = d.processed ? 'No' : 'OK';
-        markBtn.appendChild(markLabel);
-
-        function updateMarkBtnUI(isProcessed){
-          markBtn.setAttribute('data-tooltip', isProcessed ? 'Marcar como no procesado' : 'Marcar como procesado');
-          markBtn.setAttribute('aria-label', isProcessed ? 'Marcar no procesado' : 'Marcar procesado');
-          markBtn.setAttribute('aria-pressed', String(!!isProcessed));
-          markLabel.textContent = isProcessed ? 'No' : 'OK';
-          statusBadge.textContent = isProcessed ? 'Procesado' : 'Sin procesar';
-          statusBadge.className = 'badge status ' + (isProcessed ? 'processed' : 'pending');
+  // --- Delegated actions: toggle processed / delete / row selection ---
+  listBody.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest && ev.target.closest('button[data-action]');
+    if(!btn) return;
+    ev.stopPropagation();
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    if(action === 'toggle-processed'){
+      if(btn.disabled) return;
+      btn.disabled = true;
+      try {
+        const ref = doc(db, 'contact_requests', id);
+        const snap = await getDoc(ref);
+        if(!snap.exists()){
+          alert('Registro no encontrado');
+          return;
         }
-
-        markBtn.addEventListener('click', async (ev) => {
-          ev.stopPropagation();
-          if(markBtn.disabled) return;
-          markBtn.disabled = true;
-          markBtn.setAttribute('aria-busy', 'true');
-          try {
-            const ref = doc(db, 'contact_requests', id);
-            const snap = await getDoc(ref);
-            if(!snap.exists()){
-              alert('Registro no encontrado');
-              // reload current page listener will pick changes
-              return;
-            }
-            const current = snap.data().processed || false;
-            await updateDoc(ref, { processed: !current });
-            // no need to call updateGlobalCounts because realtime listeners will update counts
-            updateMarkBtnUI(!current);
-          } catch(err){
-            console.error(err);
-            alert('Error actualizando estado');
-          } finally { markBtn.removeAttribute('aria-busy'); markBtn.disabled = false; }
-        });
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'btn row danger';
-        delBtn.type = 'button';
-        delBtn.setAttribute('data-tooltip', 'Eliminar esta solicitud');
-        delBtn.setAttribute('aria-label', 'Eliminar solicitud');
-        delBtn.appendChild(createIcon('trash'));
-        delBtn.appendChild(document.createTextNode('Borrar'));
-
-        delBtn.addEventListener('click', async (ev) => {
-          ev.stopPropagation();
-          if(!confirm('¿Eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
-          if(delBtn.disabled) return;
-          delBtn.disabled = true;
-          try {
-            await deleteDoc(doc(db, 'contact_requests', id));
-            // listener will remove the item from the UI automatically
-          } catch(err){
-            console.error(err);
-            alert('Error eliminando');
-          } finally { delBtn.disabled = false; }
-        });
-
-        item.addEventListener('keydown', (e) => {
-          if(e.key === 'Enter' || e.key === ' '){
-            e.preventDefault();
-            markBtn.click();
-          } else if((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey){
-            delBtn.click();
-          }
-        });
-
-        // Selection: update footer versioner on click/focus for accessibility
-        item.addEventListener('click', () => {
-          setVersionInfo(createdDt, id, d.name || d.nombre || '');
-          document.querySelectorAll('.row-item.selected').forEach(r => r.classList.remove('selected'));
-          item.classList.add('selected');
-        });
-        item.addEventListener('focus', () => {
-          setVersionInfo(createdDt, id, d.name || d.nombre || '');
-        });
-
-        actionButtons.appendChild(markBtn);
-        actionButtons.appendChild(delBtn);
-
-        actions.appendChild(badges);
-        actions.appendChild(actionButtons);
-
-        item.appendChild(avatar);
-        item.appendChild(meta);
-        item.appendChild(actions);
-
-        listBody.appendChild(item);
-      });
-
-      pageTotal.textContent = String(items.length);
-      withPlan.textContent = String(planCount);
-      lastUpdate.textContent = latest ? latest.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
-      currentItems = items;
-      attachTooltipHandlers(listBody);
-
-      // initialize footer versioner with the top-most (más reciente) item of the page
-      if(items.length && items[0]){
-        const firstCreated = docDate(items[0].data) || null;
-        setVersionInfo(firstCreated, items[0].id, items[0].data.name || items[0].data.nombre || '');
-      } else {
-        setVersionInfo(null);
-      }
-    }
-
-    // ---------- Pagination using realtime listeners ----------
-    function updatePagination(hasNext){
-      nextBtn.disabled = !hasNext;
-      prevBtn.disabled = (currentPage <= 1);
-    }
-
-    async function goToFirstPage(){
-      currentPage = 1;
-      pageNumber.textContent = currentPage;
-      const q = buildPageQuery(null);
-      listenToPageQuery(q);
-    }
-
-    async function goToNextPage(){
-      if(!lastDocSnap) return;
-      currentPage++;
-      pageNumber.textContent = currentPage;
-      // build query starting after lastDocSnap of previous listener
-      const q = buildPageQuery(lastDocSnap);
-      listenToPageQuery(q);
-    }
-
-    async function goToPrevPage(){
-      // For previous page we need to query endBefore(firstDocSnap) with limitToLast
-      // We'll create a snapshot query for prev page; onSnapshot supports limitToLast as well
-      const colRef = collection(db, 'contact_requests');
-      try {
-        currentPage = Math.max(1, currentPage - 1);
-        pageNumber.textContent = currentPage;
-        cleanupPageListener();
-        const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
-        listBody.innerHTML = '<div class="empty">Cargando…</div>';
-        unsubPageListener = onSnapshot(q, snap => {
-          const docs = snap.docs;
-          const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
-          firstDocSnap = docs[0] || null;
-          lastDocSnap = docs[docs.length - 1] || null;
-          currentItems = docsArr;
-          render(docsArr);
-          updatePagination(true);
-        }, err => {
-          console.error('Error loading prev page', err);
-          listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
-        });
+        const current = snap.data().processed || false;
+        await updateDoc(ref, { processed: !current });
+        // optimist UI update: toggle attributes in DOM quickly
+        btn.setAttribute('aria-pressed', String(!current));
+        btn.querySelector('.mark-label') && (btn.querySelector('.mark-label').textContent = !current ? 'No' : 'OK');
+        const row = btn.closest('.row-item');
+        const statusBadge = row && row.querySelector('.badge.status');
+        if(statusBadge){ statusBadge.textContent = !current ? 'Procesado' : 'Sin procesar'; statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); }
       } catch(err){
-        console.error('Error goToPrevPage', err);
-      }
-    }
-
-    prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
-    nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
-
-    // Export CSV (igual que antes)
-    async function exportCSV(){
+        console.error(err);
+        alert('Error actualizando estado');
+      } finally { btn.disabled = false; }
+    } else if(action === 'delete'){
+      if(!confirm('¿Eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+      if(btn.disabled) return;
+      btn.disabled = true;
       try {
-        const maxExport = 5000;
-        if(!confirm('Exportar hasta ' + maxExport + ' solicitudes como máximo. ¿Continuar?')) return;
-        const colRef = collection(db, 'contact_requests');
-        const q = query(colRef, orderBy('createdAt','desc'), limit(maxExport));
-        const snap = await getDocs(q);
-        const rows = snap.docs.map(docSnap => {
-          const d = docSnap.data();
-          const name = sanitizeForCsv(d.name||d.nombre||'');
-          const email = sanitizeForCsv(d.email||'');
-          const phone = sanitizeForCsv(d.phone||'');
-          const plan = sanitizeForCsv(d.selectedPlan||'');
-          const type = sanitizeForCsv((d.type||d.docType||d.documentType||d.document_type)||'');
-          const date = sanitizeForCsv(d.date_ddmmyyyy||d.date_iso||'');
-          const msg = sanitizeForCsv(d.message||'');
-          const processed = d.processed ? 'SI' : 'NO';
-          const created = sanitizeForCsv(fmtTimestamp(d.createdAt || d.ts));
-          return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
-        });
-        const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
-        const csv = [header.join(','), ...rows].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'invitea_contact_requests.csv'; a.click(); URL.revokeObjectURL(url);
-      } catch(err){ console.error(err); alert('Error exportando'); }
+        await deleteDoc(doc(db, 'contact_requests', id));
+        // let realtime listener remove it; optionally remove immediately from DOM:
+        const row = document.querySelector(`.row-item[data-id="${id}"]`);
+        if(row) row.remove();
+      } catch(err){
+        console.error(err);
+        alert('Error eliminando');
+      } finally { btn.disabled = false; }
     }
+  });
 
-    exportBtn.addEventListener('click', exportCSV);
-    refreshBtn.addEventListener('click', async () => { await goToFirstPage(); });
-
-    // Search (client-side for currentItems)
-    function searchInPage(q){
-      if(!q) { render(currentItems); return; }
-      const lower = q.toLowerCase();
-      const filtered = currentItems.filter(d => {
-        const name = (d.data.name||d.data.nombre||'').toLowerCase();
-        const email = (d.data.email||'').toLowerCase();
-        return name.includes(lower) || email.includes(lower);
-      });
-      render(filtered);
+  // row click for selection (delegated)
+  listBody.addEventListener('click', (ev) => {
+    const row = ev.target.closest && ev.target.closest('.row-item');
+    if(!row) return;
+    const id = row.getAttribute('data-id');
+    const d = currentItems.find(x => x.id === id);
+    const createdDt = d ? docDate(d.data) : null;
+    // update footer
+    if(createdDt){
+      const human = createdDt.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      
     }
-    function debounce(fn, wait=200){
-      let t;
-      return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
-    }
-    searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
+    document.querySelectorAll('.row-item.selected').forEach(r => r.classList.remove('selected'));
+    row.classList.add('selected');
+  });
 
-    // Initialize: start listening counts and first page in realtime
-    document.addEventListener('DOMContentLoaded', () => {
-      listenCountsRealtime(); // real-time counts
-      goToFirstPage();        // real-time first page
-      attachTooltipHandlers(document);
+  // keyboard support: delegated
+  listBody.addEventListener('keydown', (e) => {
+    const row = e.target.closest && e.target.closest('.row-item');
+    if(!row) return;
+    if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      const mark = row.querySelector('button[data-action="toggle-processed"]');
+      if(mark) mark.click();
+    } else if((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey){
+      const del = row.querySelector('button[data-action="delete"]');
+      if(del) del.click();
+    }
+  });
+
+  // --- Search (client-side) ---
+  function searchInPage(q){
+    if(!q) { render(currentItems); return; }
+    const lower = q.toLowerCase();
+    const filtered = currentItems.filter(d => {
+      const name = (d.data.name||d.data.nombre||'').toLowerCase();
+      const email = (d.data.email||'').toLowerCase();
+      return name.includes(lower) || email.includes(lower);
     });
+    render(filtered);
+  }
+  function debounce(fn, wait=200){
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
+  }
+  searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
 
-    // Clean up listeners if the page unloads
-    window.addEventListener('beforeunload', () => {
-      cleanupPageListener();
-      cleanupCountsListeners();
-    });
+  // --- Export CSV (non-blocking) ---
+  async function exportCSV(){
+    try {
+      const maxExport = 5000;
+      if(!confirm('Exportar hasta ' + maxExport + ' solicitudes como máximo. ¿Continuar?')) return;
+      // generate in next tick to keep UI responsive
+      setTimeout(async () => {
+        try {
+          const colRef = collection(db, 'contact_requests');
+          const q = query(colRef, orderBy('createdAt','desc'), limit(maxExport));
+          const snap = await getDocs(q);
+          const rows = snap.docs.map(docSnap => {
+            const d = docSnap.data();
+            const csvSafe = s => {
+              if(s == null) return '';
+              const str = String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
+              if(/^[=+\-@]/.test(str)) return `'${str}`;
+              return str;
+            };
+            const name = csvSafe(d.name||d.nombre||'');
+            const email = csvSafe(d.email||'');
+            const phone = csvSafe(d.phone||'');
+            const plan = csvSafe(d.selectedPlan||'');
+            const type = csvSafe((d.type||d.docType||d.documentType||d.document_type)||'');
+            const date = csvSafe(d.date_ddmmyyyy||d.date_iso||'');
+            const msg = csvSafe(d.message||'');
+            const processed = d.processed ? 'SI' : 'NO';
+            const created = csvSafe(fmtTimestamp(d.createdAt || d.ts));
+            return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
+          });
+          const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
+          const csv = [header.join(','), ...rows].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'invitea_contact_requests.csv'; a.click(); URL.revokeObjectURL(url);
+        } catch(err){
+          console.error(err); alert('Error exportando');
+        }
+      }, 16);
+    } catch(err){ console.error(err); alert('Error exportando'); }
+  }
 
-    window.addEventListener('error', (e) => console.error(e));
-  })();
-  </script>
+  // --- Buttons / pagination bindings ---
+  exportBtn.addEventListener('click', exportCSV);
+  refreshBtn.addEventListener('click', async () => { await goToFirstPage(); });
+  prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
+  nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
+
+  // --- Initialize ---
+  document.addEventListener('DOMContentLoaded', () => {
+    initRealtimeCounts();   // conteo en tiempo real
+    goToFirstPage();        // realtime first page
+  });
+
+  window.addEventListener('beforeunload', () => { cleanupPageListener(); });
+  window.addEventListener('error', (e) => console.error(e));
+})();
+</script>
+
 </body>
 </html>
