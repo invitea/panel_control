@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
   <style>
+    /* (Estilos idénticos a la versión responsive anterior; por brevedad no los repito en comentarios) */
     :root{
       --azul: #2D68F8;
       --azul-2: #4C8BFF;
@@ -32,7 +33,6 @@
       --touch-size: 44px;
       --container-padding: 18px;
     }
-
     *{box-sizing:border-box}
     html, body { height: 100%; }
     body{
@@ -44,234 +44,63 @@
       -moz-osx-font-smoothing:grayscale;
       -webkit-tap-highlight-color: transparent;
       font-size:15px;
-
-      /* layout to keep footer at bottom */
       display: flex;
       flex-direction: column;
       min-height: 100vh;
     }
-
-    .container{
-      max-width:var(--maxw);
-      margin:16px auto;
-      padding:var(--container-padding);
-      flex: 1 0 auto;
-      width: calc(100% - 32px);
-    }
-
-    header.app-header{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      margin-bottom:12px;
-      flex-wrap:wrap;
-    }
-
-    .brand-img {
-      width:56px;height:40px;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center;
-      box-shadow:var(--shadow-2);background:linear-gradient(90deg,var(--azul),var(--azul-2));
-      flex-shrink:0;
-    }
+    .container{max-width:var(--maxw);margin:16px auto;padding:var(--container-padding);flex:1 0 auto;width: calc(100% - 32px);}
+    header.app-header{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+    .brand-img { width:56px;height:40px;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-2);background:linear-gradient(90deg,var(--azul),var(--azul-2));flex-shrink:0;}
     .brand-img img { width:100%; height:100%; object-fit:contain; display:block; }
-
     h1{font-size:18px;margin:0;color:var(--text);letter-spacing:0.2px}
     .subtitle{color:var(--muted);font-size:13px}
-
-    .controls{
-      display:flex;
-      gap:10px;
-      margin:10px 0 12px 0;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .search{
-      flex:1;min-width:140px;
-      background:var(--card-bg);
-      border:1px solid rgba(15,23,36,0.06);
-      padding:10px 12px;border-radius:12px;color:var(--text);outline:none;
-      box-shadow:var(--shadow-1);
-      font-size:14px;
-    }
-
-    .btn{
-      background: linear-gradient(90deg,var(--amarillo), var(--amarillo-2));
-      color: #0A0A0A;
-      border:none;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;
-      box-shadow:0 10px 24px rgba(45,104,248,0.06);
-      display:inline-flex;align-items:center;gap:8px;
-      transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-      will-change: transform;
-      font-size:14px;
-      line-height:1;
-      min-height:var(--touch-size);
-    }
+    .controls{display:flex;gap:10px;margin:10px 0 12px 0;flex-wrap:wrap;align-items:center;}
+    .search{flex:1;min-width:140px;background:var(--card-bg);border:1px solid rgba(15,23,36,0.06);padding:10px 12px;border-radius:12px;color:var(--text);outline:none;box-shadow:var(--shadow-1);font-size:14px;}
+    .btn{background: linear-gradient(90deg,var(--amarillo), var(--amarillo-2));color: #0A0A0A;border:none;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 10px 24px rgba(45,104,248,0.06);display:inline-flex;align-items:center;gap:8px;transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;will-change: transform;font-size:14px;line-height:1;min-height:var(--touch-size);}
     .btn:hover, .btn:focus { transform: translateY(-1.5px); box-shadow: 0 14px 32px rgba(45,104,248,0.07); }
-    .btn.ghost{
-      background:transparent;border:1px solid rgba(45,104,248,0.12);color:var(--azul);
-      box-shadow:none;font-weight:700;border-radius:12px;padding:8px 12px;font-size:14px;
-    }
-
-    .btn.row {
-      padding:8px 10px;border-radius:10px;font-size:13px;font-weight:700;
-      box-shadow:none;height:40px;display:inline-flex;align-items:center;gap:8px;
-    }
-
+    .btn.ghost{background:transparent;border:1px solid rgba(45,104,248,0.12);color:var(--azul);box-shadow:none;font-weight:700;border-radius:12px;padding:8px 12px;font-size:14px;}
+    .btn.row { padding:8px 10px;border-radius:10px;font-size:13px;font-weight:700;box-shadow:none;height:40px;display:inline-flex;align-items:center;gap:8px; }
     .btn.row.mark { background:#fff;color:var(--azul);border:1px solid rgba(45,104,248,0.10); }
     .btn.row.danger { background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,0.10); }
-
     .stats{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-    .stat{
-      background:var(--card-bg);
-      padding:10px;border-radius:10px;min-width:140px;
-      box-shadow:var(--shadow-1);border:1px solid rgba(15,23,36,0.03);
-      font-size:13px;
-    }
+    .stat{background:var(--card-bg);padding:10px;border-radius:10px;min-width:140px;box-shadow:var(--shadow-1);border:1px solid rgba(15,23,36,0.03);font-size:13px;}
     .stat .label{font-size:12px;color:var(--muted);margin-bottom:6px}
     .stat .value{font-size:15px;font-weight:400;color:var(--azul)}
-
     .list-card{ background:transparent;border-radius:10px;padding:0;border:0; }
-    .list-header{
-      padding:10px 14px;border-bottom:1px solid rgba(15,23,36,0.04);
-      display:flex;align-items:center;gap:10px;background:linear-gradient(90deg, rgba(45,104,248,0.03), rgba(76,139,255,0.01));
-      border-radius:10px 10px 0 0;
-      flex-wrap:wrap;
-    }
+    .list-header{ padding:10px 14px;border-bottom:1px solid rgba(15,23,36,0.04); display:flex;align-items:center;gap:10px;background:linear-gradient(90deg, rgba(45,104,248,0.03), rgba(76,139,255,0.01)); border-radius:10px 10px 0 0; flex-wrap:wrap; }
     .list-header h2{margin:0;font-size:15px;color:var(--azul);font-weight:700}
     .list-header .meta-note{margin-left:auto;color:var(--muted);font-size:12px}
-
-    #listBody{
-      padding:8px;max-height:60vh;overflow:auto;
-      background:var(--card-bg);border-radius:0 0 10px 10px;border:1px solid rgba(15,23,36,0.03);
-      box-shadow:var(--shadow-1);
-    }
-
-    /* Desktop row layout */
-    .row-item{
-      display:grid;
-      grid-template-columns: var(--avatar-size) 1fr 220px;
-      gap: 12px;
-      align-items:center;
-      padding:12px;border-radius:10px;margin-bottom:8px;
-      background:linear-gradient(180deg, #FFF, #FCFDFF);
-      border:1px solid rgba(15,23,36,0.03);
-      box-shadow: 0 4px 10px rgba(17,24,39,0.02);
-      transition: transform .10s ease, box-shadow .10s ease;
-      will-change: transform;
-      font-size:14px;
-      cursor: pointer;
-    }
+    #listBody{ padding:8px;max-height:60vh;overflow:auto;background:var(--card-bg);border-radius:0 0 10px 10px;border:1px solid rgba(15,23,36,0.03);box-shadow:var(--shadow-1); }
+    .row-item{ display:grid; grid-template-columns: var(--avatar-size) 1fr 220px; gap: 12px; align-items:center; padding:12px;border-radius:10px;margin-bottom:8px; background:linear-gradient(180deg, #FFF, #FCFDFF); border:1px solid rgba(15,23,36,0.03); box-shadow: 0 4px 10px rgba(17,24,39,0.02); transition: transform .10s ease, box-shadow .10s ease; will-change: transform; font-size:14px; cursor: pointer; }
     .row-item:hover, .row-item:focus-within { transform: translateY(-2px); box-shadow: var(--shadow-2); }
-
-    .avatar{
-      width:var(--avatar-size);height:var(--avatar-size);border-radius:10px;
-      background:linear-gradient(90deg,var(--azul),var(--azul-2));
-      display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;
-      box-shadow:var(--shadow-1);
-      font-size:15px;
-      font-weight:700;
-    }
-
+    .avatar{ width:var(--avatar-size);height:var(--avatar-size);border-radius:10px;background:linear-gradient(90deg,var(--azul),var(--azul-2));display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;box-shadow:var(--shadow-1);font-size:15px;font-weight:700; }
     .meta{min-width:0}
     .meta .name{font-weight:700;color:var(--text);margin-bottom:8px;font-size:15px}
     .meta .meta-lines{font-size:13px;color:var(--muted);line-height:1.35}
     .meta .meta-lines .label{display:inline-block;color:var(--muted);font-weight:600;width:76px}
     .meta .meta-lines .value{display:inline-block;color:var(--text);font-weight:400;margin-left:6px}
-
-    .actions{
-      display:flex;align-items:center;gap:10px;min-width:180px;justify-self:end;
-      justify-content:flex-end;
-    }
+    .actions{ display:flex;align-items:center;gap:10px;min-width:180px;justify-self:end;justify-content:flex-end; }
     .badges{display:flex;gap:8px;align-items:center;flex-shrink:0}
-    .badge{
-      font-size:12px;padding:6px 10px;border-radius:999px;font-weight:500;border:1px solid rgba(0,0,0,0.04);
-      display:inline-flex;align-items:center;gap:8px;
-    }
+    .badge{ font-size:12px;padding:6px 10px;border-radius:999px;font-weight:500;border:1px solid rgba(0,0,0,0.04); display:inline-flex;align-items:center;gap:8px; }
     .badge.plan{background:linear-gradient(90deg,var(--amarillo), var(--amarillo-2));color:#0A0A0A;border:1px solid rgba(0,0,0,0.04)}
     .badge.status.processed{background:linear-gradient(180deg,#F8FFFB,#EEFFF6);color:var(--azul);border:1px solid rgba(45,104,248,0.05)}
     .badge.status.pending{background:linear-gradient(180deg,#FFF6F6,#FFF0F0);color:var(--danger);border:1px solid rgba(239,68,68,0.06)}
-
     .action-buttons{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-
     .pagination{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px}
     .empty{padding:16px;text-align:center;color:var(--muted);font-style:italic}
-
-    /* Footer styles - will stick to bottom because of body flex layout */
-    footer{
-      padding:12px 14px;text-align:center;color:var(--muted);font-size:13px;margin-top:0;flex-shrink:0;border-top:1px solid rgba(15,23,36,0.03);background:transparent
-    }
+    footer{ padding:12px 14px;text-align:center;color:var(--muted);font-size:13px;margin-top:0;flex-shrink:0;border-top:1px solid rgba(15,23,36,0.03);background:transparent }
     #versionInfo{display:block;margin-top:6px;color:var(--muted);font-size:13px}
-
     .icon{width:16px;height:16px;display:inline-block;vertical-align:middle}
-
-    .__ia-tooltip {
-      position: fixed; z-index: 9999; background: var(--tooltip-bg); color: var(--tooltip-fg);
-      padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1; pointer-events: none;
-      opacity: 0; transform: translateY(6px) scale(.98); transition: opacity .12s ease, transform .12s ease;
-      box-shadow: 0 6px 20px rgba(2,6,23,0.45); max-width: 72vw; white-space: nowrap;
-      visibility: hidden;
-    }
+    .__ia-tooltip { position: fixed; z-index: 9999; background: var(--tooltip-bg); color: var(--tooltip-fg); padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1; pointer-events: none; opacity: 0; transform: translateY(6px) scale(.98); transition: opacity .12s ease, transform .12s ease; box-shadow: 0 6px 20px rgba(2,6,23,0.45); max-width: 72vw; white-space: nowrap; visibility: hidden; }
     .__ia-tooltip.show { opacity: 1; transform: translateY(0) scale(1); visibility: visible; }
-    .__ia-tooltip::after {
-      content: ""; position: absolute; left: 50%; transform: translateX(-50%); bottom: -6px; width: 10px; height: 10px;
-      background: var(--tooltip-bg); transform-origin: center; transform: translateX(-50%) rotate(45deg);
-      box-shadow: 0 6px 20px rgba(2,6,23,0.08);
-    }
-
-    .small-btn{
-      background:transparent;border:1px solid rgba(15,23,36,0.06);padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;min-height:var(--touch-size);
-    }
+    .__ia-tooltip::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); bottom: -6px; width: 10px; height: 10px; background: var(--tooltip-bg); transform-origin: center; transform: translateX(-50%) rotate(45deg); box-shadow: 0 6px 20px rgba(2,6,23,0.08); }
+    .small-btn{ background:transparent;border:1px solid rgba(15,23,36,0.06);padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;min-height:var(--touch-size); }
     .small-btn:disabled{opacity:0.5;cursor:not-allowed}
-
-    /* ========== Responsive rules ========== */
-
-    /* Tablet & small desktop */
-    @media (max-width:1000px){
-      :root { --maxw: 760px; --avatar-size:44px; --touch-size:44px; }
-      .row-item { grid-template-columns: var(--avatar-size) 1fr 180px; padding:10px; }
-      .brand-img { width:52px; height:36px; }
-    }
-
-    /* Mobile: collapse layout, stack actions under meta, larger tap targets */
-    @media (max-width:720px){
-      :root { --container-padding: 12px; --avatar-size:40px; --touch-size:48px; }
-      .container { margin:12px auto; padding:12px; }
-      header.app-header { gap:10px; align-items:flex-start; }
-      h1 { font-size:16px; }
-      .controls { flex-direction: column; align-items:stretch; }
-      .list-header { padding:10px; gap:8px; align-items:center; }
-      #listBody { max-height: calc(100vh - 320px); } /* adjust to keep visible */
-      .row-item{
-        grid-template-columns: var(--avatar-size) 1fr;
-        grid-template-rows: auto auto;
-        gap:8px;
-        padding:10px;
-      }
-      .actions{
-        grid-column: 1 / -1;
-        justify-content: space-between;
-        width:100%;
-        align-items:center;
-        padding-top:6px;
-      }
-      .action-buttons{ order:2; gap:8px; }
-      .badges{ order:1; gap:6px; flex-wrap:wrap; }
-      .badge { font-size:13px; padding:6px 8px; }
-      .meta .meta-lines .label { width: 86px; font-size:13px; }
-      .meta .meta-lines { font-size:13px; }
-      .btn, .small-btn { font-size:15px; padding:10px 12px; min-height:48px; border-radius:10px; }
-      .search { padding:12px; font-size:15px; }
-      footer { font-size:13px; padding:12px; }
-      .__ia-tooltip { display:none; } /* hide tooltips on tiny screens (touch) */
-    }
-
-    /* Very small phones */
-    @media (max-width:380px){
-      :root { --avatar-size:36px; }
-      .meta .meta-lines .label { width: 72px; font-size:12px; display:block; }
-      .meta .meta-lines .value { margin-left:0; display:block; font-size:13px; margin-top:4px; }
-    }
-
+    @media (max-width:1000px){ :root { --maxw: 760px; --avatar-size:44px; --touch-size:44px; } .row-item { grid-template-columns: var(--avatar-size) 1fr 180px; padding:10px; } .brand-img { width:52px; height:36px; } }
+    @media (max-width:720px){ :root { --container-padding: 12px; --avatar-size:40px; --touch-size:48px; } .container { margin:12px auto; padding:12px; } header.app-header { gap:10px; align-items:flex-start; } h1 { font-size:16px; } .controls { flex-direction: column; align-items:stretch; } .list-header { padding:10px; gap:8px; align-items:center; } #listBody { max-height: calc(100vh - 320px); } .row-item{ grid-template-columns: var(--avatar-size) 1fr; grid-template-rows: auto auto; gap:8px; padding:10px; } .actions{ grid-column: 1 / -1; justify-content: space-between; width:100%; align-items:center; padding-top:6px; } .action-buttons{ order:2; gap:8px; } .badges{ order:1; gap:6px; flex-wrap:wrap; } .badge { font-size:13px; padding:6px 8px; } .meta .meta-lines .label { width: 86px; font-size:13px; } .meta .meta-lines { font-size:13px; } .btn, .small-btn { font-size:15px; padding:10px 12px; min-height:48px; border-radius:10px; } .search { padding:12px; font-size:15px; } footer { font-size:13px; padding:12px; } .__ia-tooltip { display:none; } }
+    @media (max-width:380px){ :root { --avatar-size:36px; } .meta .meta-lines .label { width: 72px; font-size:12px; display:block; } .meta .meta-lines .value { margin-left:0; display:block; font-size:13px; margin-top:4px; } }
+    /* selection highlight */
+    .row-item.selected { outline: 2px solid rgba(45,104,248,0.14); box-shadow: 0 8px 28px rgba(45,104,248,0.06); }
   </style>
 </head>
 <body>
@@ -335,7 +164,7 @@
   import {
     getFirestore, collection, query, orderBy, limit, getDocs,
     startAfter, endBefore, limitToLast, doc, getDoc,
-    updateDoc, deleteDoc, where, getCountFromServer
+    updateDoc, deleteDoc, where, getCountFromServer, onSnapshot
   } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
   (function(){
@@ -364,6 +193,11 @@
     let firstDocSnap = null;
     let lastDocSnap = null;
     let currentItems = [];
+
+    // unsubcribers for realtime listeners
+    let unsubPageListener = null;
+    let unsubTotalListener = null;
+    let unsubPendingListener = null;
 
     // UI refs
     const listBody = document.getElementById('listBody');
@@ -603,6 +437,64 @@
       }
     }
 
+    // ---------- Real-time helpers ----------
+    function cleanupPageListener(){
+      if(typeof unsubPageListener === 'function'){ unsubPageListener(); unsubPageListener = null; }
+    }
+    function cleanupCountsListeners(){
+      if(typeof unsubTotalListener === 'function'){ unsubTotalListener(); unsubTotalListener = null; }
+      if(typeof unsubPendingListener === 'function'){ unsubPendingListener(); unsubPendingListener = null; }
+    }
+
+    // Listen to counts in real-time (ATTENCIÓN: escuchar toda la colección puede ser costoso en colecciones grandes)
+    function listenCountsRealtime(){
+      try {
+        const colRef = collection(db, 'contact_requests');
+        // total
+        cleanupCountsListeners();
+        unsubTotalListener = onSnapshot(query(colRef), snap => {
+          totalCount.textContent = `${snap.size} solicitudes`;
+        }, err => {
+          console.warn('Error total count snapshot', err);
+        });
+        // pending (processed == false)
+        unsubPendingListener = onSnapshot(query(colRef, where('processed','==', false)), snap => {
+          pendingCount.textContent = `${snap.size} sin procesar`;
+        }, err => {
+          console.warn('Error pending count snapshot', err);
+        });
+      } catch(e){
+        console.warn('No se pudo iniciar listeners para conteos', e);
+      }
+    }
+
+    // Listen to a page query in realtime; q must be a Firestore query
+    function listenToPageQuery(q){
+      cleanupPageListener();
+      listBody.innerHTML = '<div class="empty">Cargando…</div>';
+      unsubPageListener = onSnapshot(q, snap => {
+        const docs = snap.docs;
+        const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
+        // update pagination anchors for first/last snapshots
+        firstDocSnap = docs[0] || null;
+        lastDocSnap = docs[docs.length - 1] || null;
+        currentItems = docsArr;
+        render(docsArr);
+        updatePagination(docs.length === pageSize);
+      }, err => {
+        console.error('Error listening page', err);
+        listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
+      });
+    }
+
+    // Helper to build page query for given cursor (startAfterDoc may be null)
+    function buildPageQuery(startAfterDoc){
+      const colRef = collection(db, 'contact_requests');
+      if(!startAfterDoc) return query(colRef, orderBy('createdAt','desc'), limit(pageSize));
+      return query(colRef, orderBy('createdAt','desc'), startAfter(startAfterDoc), limit(pageSize));
+    }
+
+    // ---------- Render function (same lógica que antes) ----------
     function render(items){
       listBody.innerHTML = '';
       if(!items || items.length === 0){
@@ -688,12 +580,12 @@
             const snap = await getDoc(ref);
             if(!snap.exists()){
               alert('Registro no encontrado');
-              await loadFirstPage();
+              // reload current page listener will pick changes
               return;
             }
             const current = snap.data().processed || false;
             await updateDoc(ref, { processed: !current });
-            await updateGlobalCounts();
+            // no need to call updateGlobalCounts because realtime listeners will update counts
             updateMarkBtnUI(!current);
           } catch(err){
             console.error(err);
@@ -716,8 +608,7 @@
           delBtn.disabled = true;
           try {
             await deleteDoc(doc(db, 'contact_requests', id));
-            item.remove();
-            await updateGlobalCounts();
+            // listener will remove the item from the UI automatically
           } catch(err){
             console.error(err);
             alert('Error eliminando');
@@ -736,7 +627,6 @@
         // Selection: update footer versioner on click/focus for accessibility
         item.addEventListener('click', () => {
           setVersionInfo(createdDt, id, d.name || d.nombre || '');
-          // visually mark (toggle) selection for better UX on desktop; mobile relies on footer
           document.querySelectorAll('.row-item.selected').forEach(r => r.classList.remove('selected'));
           item.classList.add('selected');
         });
@@ -772,106 +662,59 @@
       }
     }
 
-    async function loadFirstPage(){
-      listBody.innerHTML = '<div class="empty">Cargando…</div>';
-      try {
-        currentPage = 1;
-        pageNumber.textContent = currentPage;
-        const colRef = collection(db, 'contact_requests');
-        const q = query(colRef, orderBy('createdAt','desc'), limit(pageSize));
-        const snap = await getDocs(q);
-        const docs = snap.docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
-        firstDocSnap = snap.docs[0] || null;
-        lastDocSnap = snap.docs[snap.docs.length - 1] || null;
-        currentItems = docs;
-        render(docs);
-        updatePagination( snap.docs.length === pageSize );
-        await updateGlobalCounts();
-      } catch(err){
-        listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
-        console.error(err);
-      }
-    }
-
-    async function loadNextPage(){
-      if(!lastDocSnap) return;
-      listBody.innerHTML = '<div class="empty">Cargando…</div>';
-      try {
-        const colRef = collection(db, 'contact_requests');
-        const q = query(colRef, orderBy('createdAt','desc'), startAfter(lastDocSnap), limit(pageSize));
-        const snap = await getDocs(q);
-        const docs = snap.docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
-        if(!docs.length){ updatePagination(false); return; }
-        firstDocSnap = snap.docs[0] || null;
-        lastDocSnap = snap.docs[snap.docs.length - 1] || null;
-        currentPage++;
-        pageNumber.textContent = currentPage;
-        currentItems = docs;
-        render(docs);
-        updatePagination( snap.docs.length === pageSize );
-      } catch(err){ console.error(err); listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>'; }
-    }
-
-    async function loadPrevPage(){
-      if(!firstDocSnap) return;
-      listBody.innerHTML = '<div class="empty">Cargando…</div>';
-      try {
-        const colRef = collection(db, 'contact_requests');
-        const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
-        const snap = await getDocs(q);
-        const docs = snap.docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
-        if(!docs.length) { updatePagination(true); return; }
-        firstDocSnap = snap.docs[0] || null;
-        lastDocSnap = snap.docs[snap.docs.length - 1] || null;
-        currentPage = Math.max(1, currentPage - 1);
-        pageNumber.textContent = currentPage;
-        currentItems = docs;
-        render(docs);
-        updatePagination(true);
-      } catch(err){ console.error(err); listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>'; }
-    }
-
+    // ---------- Pagination using realtime listeners ----------
     function updatePagination(hasNext){
       nextBtn.disabled = !hasNext;
       prevBtn.disabled = (currentPage <= 1);
     }
 
-    async function updateGlobalCounts(){
+    async function goToFirstPage(){
+      currentPage = 1;
+      pageNumber.textContent = currentPage;
+      const q = buildPageQuery(null);
+      listenToPageQuery(q);
+    }
+
+    async function goToNextPage(){
+      if(!lastDocSnap) return;
+      currentPage++;
+      pageNumber.textContent = currentPage;
+      // build query starting after lastDocSnap of previous listener
+      const q = buildPageQuery(lastDocSnap);
+      listenToPageQuery(q);
+    }
+
+    async function goToPrevPage(){
+      // For previous page we need to query endBefore(firstDocSnap) with limitToLast
+      // We'll create a snapshot query for prev page; onSnapshot supports limitToLast as well
+      const colRef = collection(db, 'contact_requests');
       try {
-        const colRef = collection(db, 'contact_requests');
-        try {
-          const totalSnap = await getCountFromServer(query(colRef));
-          const pendingSnap = await getCountFromServer(query(colRef, where('processed','==', false)));
-          const total = totalSnap.data().count || 0;
-          const pending = pendingSnap.data().count || 0;
-          totalCount.textContent = `${total} solicitudes`;
-          pendingCount.textContent = `${pending} sin procesar`;
-        } catch (aggErr) {
-          const snap = await getDocs(query(colRef, orderBy('createdAt','desc'), limit(1000)));
-          const total = snap.size;
-          const pending = snap.docs.filter(d => !d.data().processed).length;
-          totalCount.textContent = `${total} solicitudes (últimos 1000)`;
-          pendingCount.textContent = `${pending} sin procesar (en muestra)`;
-        }
-      } catch(err){ console.warn('No se pudieron cargar conteos globales', err); totalCount.textContent = '—'; pendingCount.textContent = '—'; }
+        currentPage = Math.max(1, currentPage - 1);
+        pageNumber.textContent = currentPage;
+        cleanupPageListener();
+        const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
+        listBody.innerHTML = '<div class="empty">Cargando…</div>';
+        unsubPageListener = onSnapshot(q, snap => {
+          const docs = snap.docs;
+          const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
+          firstDocSnap = docs[0] || null;
+          lastDocSnap = docs[docs.length - 1] || null;
+          currentItems = docsArr;
+          render(docsArr);
+          updatePagination(true);
+        }, err => {
+          console.error('Error loading prev page', err);
+          listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
+        });
+      } catch(err){
+        console.error('Error goToPrevPage', err);
+      }
     }
 
-    function searchInPage(q){
-      if(!q) { render(currentItems); return; }
-      const lower = q.toLowerCase();
-      const filtered = currentItems.filter(d => {
-        const name = (d.data.name||d.data.nombre||'').toLowerCase();
-        const email = (d.data.email||'').toLowerCase();
-        return name.includes(lower) || email.includes(lower);
-      });
-      render(filtered);
-    }
-    function debounce(fn, wait=200){
-      let t;
-      return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
-    }
-    searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
+    prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
+    nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
 
+    // Export CSV (igual que antes)
     async function exportCSV(){
       try {
         const maxExport = 5000;
@@ -900,12 +743,39 @@
       } catch(err){ console.error(err); alert('Error exportando'); }
     }
 
-    prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await loadPrevPage(); });
-    nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await loadNextPage(); });
     exportBtn.addEventListener('click', exportCSV);
-    refreshBtn.addEventListener('click', async () => { await loadFirstPage(); await updateGlobalCounts(); });
+    refreshBtn.addEventListener('click', async () => { await goToFirstPage(); });
 
-    document.addEventListener('DOMContentLoaded', () => { loadFirstPage(); attachTooltipHandlers(document); });
+    // Search (client-side for currentItems)
+    function searchInPage(q){
+      if(!q) { render(currentItems); return; }
+      const lower = q.toLowerCase();
+      const filtered = currentItems.filter(d => {
+        const name = (d.data.name||d.data.nombre||'').toLowerCase();
+        const email = (d.data.email||'').toLowerCase();
+        return name.includes(lower) || email.includes(lower);
+      });
+      render(filtered);
+    }
+    function debounce(fn, wait=200){
+      let t;
+      return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
+    }
+    searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
+
+    // Initialize: start listening counts and first page in realtime
+    document.addEventListener('DOMContentLoaded', () => {
+      listenCountsRealtime(); // real-time counts
+      goToFirstPage();        // real-time first page
+      attachTooltipHandlers(document);
+    });
+
+    // Clean up listeners if the page unloads
+    window.addEventListener('beforeunload', () => {
+      cleanupPageListener();
+      cleanupCountsListeners();
+    });
+
     window.addEventListener('error', (e) => console.error(e));
   })();
   </script>
