@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta property="og:image" content="https://i.ibb.co/1Qf3kqZ/invitea-logo.png">
   <title>Panel — Contactos Invitea</title>
 
@@ -21,148 +21,188 @@
       --radius: 10px;
       --shadow-1: 0 5px 14px rgba(17,24,39,0.05);
       --shadow-2: 0 12px 28px rgba(17,24,39,0.06);
-      --maxw: 900px;
+      --maxw: 980px;
       --danger: #EF4444;
       --gap: 8px;
       --tooltip-bg: rgba(12,15,20,0.95);
       --tooltip-fg: #ffffff;
+
+      /* sizes */
+      --avatar-size: 48px;
+      --touch-size: 44px;
+      --container-padding: 18px;
     }
 
     *{box-sizing:border-box}
+    html, body { height: 100%; }
     body{
       margin:0;
       font-family:Inter, Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
       background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
       color:var(--text);
-      min-height:100vh;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
       -webkit-tap-highlight-color: transparent;
-      font-size:14px;
+      font-size:15px;
+
+      /* layout to keep footer at bottom */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
     }
 
-    .container{max-width:var(--maxw);margin:20px auto;padding:14px}
-    header.app-header{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+    .container{
+      max-width:var(--maxw);
+      margin:16px auto;
+      padding:var(--container-padding);
+      flex: 1 0 auto;
+      width: calc(100% - 32px);
+    }
+
+    header.app-header{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+
     .brand-img {
-      width:52px;height:36px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;
+      width:56px;height:40px;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center;
       box-shadow:var(--shadow-2);background:linear-gradient(90deg,var(--azul),var(--azul-2));
       flex-shrink:0;
     }
     .brand-img img { width:100%; height:100%; object-fit:contain; display:block; }
 
-    h1{font-size:16px;margin:0;color:var(--text);letter-spacing:0.2px}
-    .subtitle{color:var(--muted);font-size:12px}
+    h1{font-size:18px;margin:0;color:var(--text);letter-spacing:0.2px}
+    .subtitle{color:var(--muted);font-size:13px}
 
-    .controls{display:flex;gap:8px;margin:10px 0 12px 0;flex-wrap:wrap;align-items:center}
+    .controls{
+      display:flex;
+      gap:10px;
+      margin:10px 0 12px 0;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
     .search{
       flex:1;min-width:140px;
       background:var(--card-bg);
-      border:1px solid rgba(15,23,36,0.05);
-      padding:8px 10px;border-radius:10px;color:var(--text);outline:none;
+      border:1px solid rgba(15,23,36,0.06);
+      padding:10px 12px;border-radius:12px;color:var(--text);outline:none;
       box-shadow:var(--shadow-1);
-      font-size:13px;
+      font-size:14px;
     }
 
     .btn{
       background: linear-gradient(90deg,var(--amarillo), var(--amarillo-2));
       color: #0A0A0A;
-      border:none;padding:8px 10px;border-radius:10px;font-weight:700;cursor:pointer;
+      border:none;padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;
       box-shadow:0 10px 24px rgba(45,104,248,0.06);
       display:inline-flex;align-items:center;gap:8px;
       transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
       will-change: transform;
-      font-size:13px;
+      font-size:14px;
+      line-height:1;
+      min-height:var(--touch-size);
     }
     .btn:hover, .btn:focus { transform: translateY(-1.5px); box-shadow: 0 14px 32px rgba(45,104,248,0.07); }
     .btn.ghost{
-      background:transparent;border:1px solid rgba(45,104,248,0.10);color:var(--azul);
-      box-shadow:none;font-weight:700;border-radius:10px;padding:8px 10px;font-size:13px;
+      background:transparent;border:1px solid rgba(45,104,248,0.12);color:var(--azul);
+      box-shadow:none;font-weight:700;border-radius:12px;padding:8px 12px;font-size:14px;
     }
 
     .btn.row {
-      padding:6px 8px;border-radius:8px;font-size:12px;font-weight:700;
-      box-shadow:none;height:32px;display:inline-flex;align-items:center;gap:6px;
+      padding:8px 10px;border-radius:10px;font-size:13px;font-weight:700;
+      box-shadow:none;height:40px;display:inline-flex;align-items:center;gap:8px;
     }
 
     .btn.row.mark { background:#fff;color:var(--azul);border:1px solid rgba(45,104,248,0.10); }
     .btn.row.danger { background:transparent;color:var(--danger);border:1px solid rgba(239,68,68,0.10); }
 
-    .stats{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .stats{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
     .stat{
       background:var(--card-bg);
-      padding:8px;border-radius:10px;min-width:120px;
+      padding:10px;border-radius:10px;min-width:140px;
       box-shadow:var(--shadow-1);border:1px solid rgba(15,23,36,0.03);
-      font-size:12px;
+      font-size:13px;
     }
-    .stat .label{font-size:11px;color:var(--muted);margin-bottom:4px}
-    /* Mostrar valores de estadísticas sin negrita */
-    .stat .value{font-size:14px;font-weight:400;color:var(--azul)}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .stat .value{font-size:15px;font-weight:400;color:var(--azul)}
 
     .list-card{ background:transparent;border-radius:10px;padding:0;border:0; }
     .list-header{
-      padding:8px 12px;border-bottom:1px solid rgba(15,23,36,0.04);
+      padding:10px 14px;border-bottom:1px solid rgba(15,23,36,0.04);
       display:flex;align-items:center;gap:10px;background:linear-gradient(90deg, rgba(45,104,248,0.03), rgba(76,139,255,0.01));
       border-radius:10px 10px 0 0;
+      flex-wrap:wrap;
     }
-    .list-header h2{margin:0;font-size:14px;color:var(--azul);font-weight:700}
+    .list-header h2{margin:0;font-size:15px;color:var(--azul);font-weight:700}
     .list-header .meta-note{margin-left:auto;color:var(--muted);font-size:12px}
 
     #listBody{
-      padding:8px;max-height:52vh;overflow:auto;
+      padding:8px;max-height:60vh;overflow:auto;
       background:var(--card-bg);border-radius:0 0 10px 10px;border:1px solid rgba(15,23,36,0.03);
       box-shadow:var(--shadow-1);
     }
 
+    /* Desktop row layout */
     .row-item{
       display:grid;
-      grid-template-columns:40px 1fr auto;
-      gap: 8px;
+      grid-template-columns: var(--avatar-size) 1fr 220px;
+      gap: 12px;
       align-items:center;
-      padding:8px;border-radius:8px;margin-bottom:6px;
+      padding:12px;border-radius:10px;margin-bottom:8px;
       background:linear-gradient(180deg, #FFF, #FCFDFF);
       border:1px solid rgba(15,23,36,0.03);
       box-shadow: 0 4px 10px rgba(17,24,39,0.02);
       transition: transform .10s ease, box-shadow .10s ease;
       will-change: transform;
-      font-size:13px;
+      font-size:14px;
+      cursor: pointer;
     }
     .row-item:hover, .row-item:focus-within { transform: translateY(-2px); box-shadow: var(--shadow-2); }
 
     .avatar{
-      width:40px;height:40px;border-radius:8px;
+      width:var(--avatar-size);height:var(--avatar-size);border-radius:10px;
       background:linear-gradient(90deg,var(--azul),var(--azul-2));
       display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;
       box-shadow:var(--shadow-1);
-      font-size:13px;
-      font-weight:600; /* keep avatar letters slightly emphasized */
+      font-size:15px;
+      font-weight:700;
     }
 
     .meta{min-width:0}
-    /* Mostrar nombres en negrita (solicitudes recientes) */
-    .meta .name{font-weight:700;color:var(--text);margin-bottom:6px;font-size:13px}
-    .meta .meta-lines{font-size:12px;color:var(--muted);line-height:1.35}
-    .meta .meta-lines .label{display:inline-block;color:var(--muted);font-weight:600;width:76px} /* label slightly emphasized */
+    .meta .name{font-weight:700;color:var(--text);margin-bottom:8px;font-size:15px}
+    .meta .meta-lines{font-size:13px;color:var(--muted);line-height:1.35}
+    .meta .meta-lines .label{display:inline-block;color:var(--muted);font-weight:600;width:76px}
     .meta .meta-lines .value{display:inline-block;color:var(--text);font-weight:400;margin-left:6px}
 
     .actions{
-      display:flex;align-items:center;gap:6px;min-width:180px;justify-self:end;
+      display:flex;align-items:center;gap:10px;min-width:180px;justify-self:end;
+      justify-content:flex-end;
     }
-    .badges{display:flex;gap:6px;align-items:center;flex-shrink:0}
+    .badges{display:flex;gap:8px;align-items:center;flex-shrink:0}
     .badge{
-      font-size:11px;padding:4px 8px;border-radius:999px;font-weight:400;border:1px solid rgba(0,0,0,0.04);
-      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;padding:6px 10px;border-radius:999px;font-weight:500;border:1px solid rgba(0,0,0,0.04);
+      display:inline-flex;align-items:center;gap:8px;
     }
     .badge.plan{background:linear-gradient(90deg,var(--amarillo), var(--amarillo-2));color:#0A0A0A;border:1px solid rgba(0,0,0,0.04)}
     .badge.status.processed{background:linear-gradient(180deg,#F8FFFB,#EEFFF6);color:var(--azul);border:1px solid rgba(45,104,248,0.05)}
     .badge.status.pending{background:linear-gradient(180deg,#FFF6F6,#FFF0F0);color:var(--danger);border:1px solid rgba(239,68,68,0.06)}
 
-    .action-buttons{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+    .action-buttons{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 
-    .pagination{display:flex;gap:8px;align-items:center;justify-content:center;padding:8px}
-    .empty{padding:12px;text-align:center;color:var(--muted);font-style:italic}
-    footer{padding:10px;text-align:center;color:var(--muted);font-size:12px;margin-top:10px}
+    .pagination{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px}
+    .empty{padding:16px;text-align:center;color:var(--muted);font-style:italic}
 
-    .icon{width:14px;height:14px;display:inline-block;vertical-align:middle}
+    /* Footer styles - will stick to bottom because of body flex layout */
+    footer{
+      padding:12px 14px;text-align:center;color:var(--muted);font-size:13px;margin-top:0;flex-shrink:0;border-top:1px solid rgba(15,23,36,0.03);background:transparent
+    }
+    #versionInfo{display:block;margin-top:6px;color:var(--muted);font-size:13px}
+
+    .icon{width:16px;height:16px;display:inline-block;vertical-align:middle}
 
     .__ia-tooltip {
       position: fixed; z-index: 9999; background: var(--tooltip-bg); color: var(--tooltip-fg);
@@ -179,16 +219,59 @@
     }
 
     .small-btn{
-      background:transparent;border:1px solid rgba(15,23,36,0.06);padding:6px 8px;border-radius:8px;cursor:pointer;font-size:12px;
+      background:transparent;border:1px solid rgba(15,23,36,0.06);padding:8px 10px;border-radius:10px;cursor:pointer;font-size:13px;min-height:var(--touch-size);
     }
     .small-btn:disabled{opacity:0.5;cursor:not-allowed}
 
-    @media (max-width:720px){
-      .row-item{grid-template-columns:36px 1fr; grid-template-rows: auto auto; padding:8px}
-      .actions{grid-column: 1 / -1;justify-content:space-between;align-items:center;width:100%}
-      .avatar{width:36px;height:36px}
+    /* ========== Responsive rules ========== */
+
+    /* Tablet & small desktop */
+    @media (max-width:1000px){
+      :root { --maxw: 760px; --avatar-size:44px; --touch-size:44px; }
+      .row-item { grid-template-columns: var(--avatar-size) 1fr 180px; padding:10px; }
+      .brand-img { width:52px; height:36px; }
     }
-    @media (max-width:420px) { .__ia-tooltip { display:none; } }
+
+    /* Mobile: collapse layout, stack actions under meta, larger tap targets */
+    @media (max-width:720px){
+      :root { --container-padding: 12px; --avatar-size:40px; --touch-size:48px; }
+      .container { margin:12px auto; padding:12px; }
+      header.app-header { gap:10px; align-items:flex-start; }
+      h1 { font-size:16px; }
+      .controls { flex-direction: column; align-items:stretch; }
+      .list-header { padding:10px; gap:8px; align-items:center; }
+      #listBody { max-height: calc(100vh - 320px); } /* adjust to keep visible */
+      .row-item{
+        grid-template-columns: var(--avatar-size) 1fr;
+        grid-template-rows: auto auto;
+        gap:8px;
+        padding:10px;
+      }
+      .actions{
+        grid-column: 1 / -1;
+        justify-content: space-between;
+        width:100%;
+        align-items:center;
+        padding-top:6px;
+      }
+      .action-buttons{ order:2; gap:8px; }
+      .badges{ order:1; gap:6px; flex-wrap:wrap; }
+      .badge { font-size:13px; padding:6px 8px; }
+      .meta .meta-lines .label { width: 86px; font-size:13px; }
+      .meta .meta-lines { font-size:13px; }
+      .btn, .small-btn { font-size:15px; padding:10px 12px; min-height:48px; border-radius:10px; }
+      .search { padding:12px; font-size:15px; }
+      footer { font-size:13px; padding:12px; }
+      .__ia-tooltip { display:none; } /* hide tooltips on tiny screens (touch) */
+    }
+
+    /* Very small phones */
+    @media (max-width:380px){
+      :root { --avatar-size:36px; }
+      .meta .meta-lines .label { width: 72px; font-size:12px; display:block; }
+      .meta .meta-lines .value { margin-left:0; display:block; font-size:13px; margin-top:4px; }
+    }
+
   </style>
 </head>
 <body>
@@ -197,11 +280,11 @@
       <div class="brand-img" aria-hidden="false">
         <img src="https://i.ibb.co/1Qf3kqZ/invitea-logo.png" alt="Invitea logo">
       </div>
-      <div>
+      <div style="min-width:0">
         <h1>Panel de Contactos — Invitea</h1>
         <div class="subtitle">Gestiona solicitudes de personalización y mensajes</div>
       </div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn ghost" id="refreshBtn" type="button" data-tooltip="Recargar la lista" aria-label="Actualizar lista">Actualizar</button>
         <button class="btn" id="exportCsv" type="button" data-tooltip="Descargar solicitudes en CSV" aria-label="Exportar CSV">Exportar CSV</button>
       </div>
@@ -233,13 +316,17 @@
 
       <div class="pagination" aria-label="Paginación">
         <button id="prev" class="small-btn" disabled type="button" data-tooltip="Página anterior" aria-label="Página anterior">Anterior</button>
-        <div style="color:var(--muted);font-size:12px">Página <span id="pageNumber">1</span></div>
+        <div style="color:var(--muted);font-size:13px">Página <span id="pageNumber">1</span></div>
         <button id="next" class="small-btn" disabled type="button" data-tooltip="Página siguiente" aria-label="Página siguiente">Siguiente</button>
       </div>
     </section>
 
-    <footer>Invitea · Panel de administración</footer>
   </div>
+
+  <footer>
+    Invitea · Panel de administración
+    <span id="versionInfo" aria-live="polite" aria-atomic="true">Publicado: —</span>
+  </footer>
 
   <div id="__ia-tooltip" class="__ia-tooltip" role="status" aria-live="polite" style="display:none"></div>
 
@@ -292,6 +379,7 @@
     const pageTotal = document.getElementById('pageTotal');
     const lastUpdate = document.getElementById('lastUpdate');
     const withPlan = document.getElementById('withPlan');
+    const versionInfo = document.getElementById('versionInfo');
 
     const tooltip = document.getElementById('__ia-tooltip');
 
@@ -329,6 +417,8 @@
     function showTooltipFor(target){
       const text = target.getAttribute('data-tooltip') || target.getAttribute('title') || '';
       if(!text) return hideTooltip();
+      // hide tooltips on small screens (touch-first)
+      if(window.matchMedia && window.matchMedia('(max-width:720px)').matches) return;
       tooltip.textContent = text;
       tooltip.style.display = 'block';
       tooltip.style.visibility = 'hidden';
@@ -401,7 +491,6 @@
       return null;
     }
 
-    // Now include Tipo field (checks multiple possible keys)
     function createMetaLines(d){
       const container = document.createElement('div');
       container.className = 'meta-lines';
@@ -487,10 +576,31 @@
       return svg;
     }
 
-    // sanitize strings for CSV export: double quotes doubled, newline replaced with \n escape
     function sanitizeForCsv(s){
       if(s == null) return '';
-      return String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
+      const str = String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
+      if(/^[=+\-@]/.test(str)) return `'${str}`;
+      return str;
+    }
+
+    function setVersionInfo(dateObj, id, title){
+      if(!dateObj){
+        versionInfo.textContent = 'Publicado: —';
+        versionInfo.dataset.pubId = '';
+        return;
+      }
+      try {
+        const d = (typeof dateObj.toDate === 'function') ? dateObj.toDate() : new Date(dateObj);
+        if(isNaN(d)) { versionInfo.textContent = 'Publicado: —'; versionInfo.dataset.pubId = ''; return; }
+        const human = d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const iso = d.toISOString();
+        versionInfo.textContent = `Publicado: ${human} · (${iso})`;
+        versionInfo.dataset.pubId = id || '';
+        versionInfo.title = title ? `Publicación: ${title}` : '';
+      } catch(e){
+        versionInfo.textContent = 'Publicado: —';
+        versionInfo.dataset.pubId = '';
+      }
     }
 
     function render(items){
@@ -500,6 +610,7 @@
         pageTotal.textContent = '0';
         withPlan.textContent = '0';
         lastUpdate.textContent = '—';
+        setVersionInfo(null);
         return;
       }
 
@@ -511,7 +622,6 @@
         const d = entry.data;
         if (d.selectedPlan) planCount++;
 
-        // compute created date in a robust way using docDate()
         const createdDt = docDate(d);
         if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
 
@@ -554,7 +664,6 @@
         markBtn.setAttribute('aria-label', d.processed ? 'Marcar no procesado' : 'Marcar procesado');
         markBtn.setAttribute('aria-pressed', String(!!d.processed));
         markBtn.appendChild(createIcon('check'));
-        // Use a span label so updates are robust
         const markLabel = document.createElement('span');
         markLabel.className = 'mark-label';
         markLabel.textContent = d.processed ? 'No' : 'OK';
@@ -624,6 +733,17 @@
           }
         });
 
+        // Selection: update footer versioner on click/focus for accessibility
+        item.addEventListener('click', () => {
+          setVersionInfo(createdDt, id, d.name || d.nombre || '');
+          // visually mark (toggle) selection for better UX on desktop; mobile relies on footer
+          document.querySelectorAll('.row-item.selected').forEach(r => r.classList.remove('selected'));
+          item.classList.add('selected');
+        });
+        item.addEventListener('focus', () => {
+          setVersionInfo(createdDt, id, d.name || d.nombre || '');
+        });
+
         actionButtons.appendChild(markBtn);
         actionButtons.appendChild(delBtn);
 
@@ -642,6 +762,14 @@
       lastUpdate.textContent = latest ? latest.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
       currentItems = items;
       attachTooltipHandlers(listBody);
+
+      // initialize footer versioner with the top-most (más reciente) item of the page
+      if(items.length && items[0]){
+        const firstCreated = docDate(items[0].data) || null;
+        setVersionInfo(firstCreated, items[0].id, items[0].data.name || items[0].data.nombre || '');
+      } else {
+        setVersionInfo(null);
+      }
     }
 
     async function loadFirstPage(){
@@ -719,11 +847,11 @@
           totalCount.textContent = `${total} solicitudes`;
           pendingCount.textContent = `${pending} sin procesar`;
         } catch (aggErr) {
-          const snap = await getDocs(colRef);
+          const snap = await getDocs(query(colRef, orderBy('createdAt','desc'), limit(1000)));
           const total = snap.size;
           const pending = snap.docs.filter(d => !d.data().processed).length;
-          totalCount.textContent = `${total} solicitudes`;
-          pendingCount.textContent = `${pending} sin procesar`;
+          totalCount.textContent = `${total} solicitudes (últimos 1000)`;
+          pendingCount.textContent = `${pending} sin procesar (en muestra)`;
         }
       } catch(err){ console.warn('No se pudieron cargar conteos globales', err); totalCount.textContent = '—'; pendingCount.textContent = '—'; }
     }
@@ -753,16 +881,16 @@
         const snap = await getDocs(q);
         const rows = snap.docs.map(docSnap => {
           const d = docSnap.data();
-          const name = `"${sanitizeForCsv(d.name||d.nombre||'')}"`;
-          const email = `"${sanitizeForCsv(d.email||'')}"`;
-          const phone = `"${sanitizeForCsv(d.phone||'')}"`;
-          const plan = `"${sanitizeForCsv(d.selectedPlan||'')}"`;
-          const type = `"${sanitizeForCsv((d.type||d.docType||d.documentType||d.document_type)||'')}"`;
-          const date = `"${sanitizeForCsv(d.date_ddmmyyyy||d.date_iso||'')}"`;
-          const msg = `"${sanitizeForCsv(d.message||'')}"`;
+          const name = sanitizeForCsv(d.name||d.nombre||'');
+          const email = sanitizeForCsv(d.email||'');
+          const phone = sanitizeForCsv(d.phone||'');
+          const plan = sanitizeForCsv(d.selectedPlan||'');
+          const type = sanitizeForCsv((d.type||d.docType||d.documentType||d.document_type)||'');
+          const date = sanitizeForCsv(d.date_ddmmyyyy||d.date_iso||'');
+          const msg = sanitizeForCsv(d.message||'');
           const processed = d.processed ? 'SI' : 'NO';
-          const created = `"${sanitizeForCsv(fmtTimestamp(d.createdAt || d.ts))}"`;
-          return [name,email,phone,plan,type,date,processed,created,msg].join(',');
+          const created = sanitizeForCsv(fmtTimestamp(d.createdAt || d.ts));
+          return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
         });
         const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
         const csv = [header.join(','), ...rows].join('\n');
