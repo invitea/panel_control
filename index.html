@@ -147,7 +147,7 @@ footer{ padding:12px 14px; text-align:center; color:var(--muted); font-size:13px
   align-items:center;
   padding:0 12px;
 }
-</style>
+  </style>
 </head>
 <body>
   <div class="container" role="main">
@@ -156,8 +156,7 @@ footer{ padding:12px 14px; text-align:center; color:var(--muted); font-size:13px
         <img src="https://i.ibb.co/1Qf3kqZ/invitea-logo.png" alt="Invitea logo">
       </div>
       <div style="min-width:0">
-        <h1>Panel de Contactos — Invitea</h1>
-        <div class="subtitle">Gestiona solicitudes de personalización y mensajes</div>
+        <h1>Panel de Contactos</h1>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn ghost" id="refreshBtn" type="button" data-tooltip="Recargar la lista" aria-label="Actualizar lista">Actualizar</button>
@@ -167,22 +166,24 @@ footer{ padding:12px 14px; text-align:center; color:var(--muted); font-size:13px
 
     <section class="controls" aria-label="Controles">
       <input id="search" class="search" type="search" placeholder="Buscar por nombre o correo..." aria-label="Buscar solicitudes" />
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <div class="pill" id="totalCount" style="background:transparent;border:none;color:var(--muted)">— solicitudes</div>
-        <div class="pill" id="pendingCount" style="background:transparent;border:none;color:var(--muted)">— sin procesar</div>
-      </div>
+      <!-- Píldoras eliminadas según solicitud -->
     </section>
 
     <section class="stats" aria-label="Estadísticas">
       <div class="stat"><div class="label">Solicitudes totales (página)</div><div class="value" id="pageTotal">0</div></div>
       <div class="stat"><div class="label">Última actualización</div><div class="value" id="lastUpdate">—</div></div>
       <div class="stat"><div class="label">Con plan seleccionado (página)</div><div class="value" id="withPlan">0</div></div>
+
+      <!-- NUEVO: contador sin procesar integrado en Estadísticas -->
+      <div class="stat">
+        <div class="label">Sin procesar (total)</div>
+        <div class="value" id="pendingCountStat">0</div>
+      </div>
     </section>
 
     <section class="list-card" aria-labelledby="listTitle">
       <div class="list-header">
         <h2 id="listTitle">Solicitudes recientes</h2>
-        <div class="meta-note">Más reciente arriba · vista compacta</div>
       </div>
 
       <div id="listBody" role="list" aria-live="polite">
@@ -198,7 +199,7 @@ footer{ padding:12px 14px; text-align:center; color:var(--muted); font-size:13px
 
   </div>
 
-  
+
   <footer>
     Invitea · Panel de administración · 
     <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
@@ -214,7 +215,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebas
 import {
   getFirestore, collection, query, orderBy, limit, getDocs,
   startAfter, endBefore, limitToLast, doc, getDoc,
-  updateDoc, deleteDoc, where, getCountFromServer, onSnapshot
+  updateDoc, deleteDoc, where, onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
 (async function(){
@@ -250,8 +251,7 @@ import {
   const searchInput = document.getElementById('search');
   const exportBtn = document.getElementById('exportCsv');
   const refreshBtn = document.getElementById('refreshBtn');
-  const totalCount = document.getElementById('totalCount');
-  const pendingCount = document.getElementById('pendingCount');
+  const pendingCountStat = document.getElementById('pendingCountStat'); // NUEVO: stat integrado
   const pageTotal = document.getElementById('pageTotal');
   const lastUpdate = document.getElementById('lastUpdate');
   const withPlan = document.getElementById('withPlan');
@@ -345,36 +345,27 @@ import {
     if(!t) hideTooltip();
   });
 
-  // --- Counts en tiempo real con onSnapshot ---
-function pluralize(n, singular, plural) {
-  return n === 1 ? singular : plural;
-}
-
-function initRealtimeCounts() {
-  try {
-    const colRef = collection(db, 'contact_requests');
-    const pendingQ = query(colRef, where('processed', '==', false));
-
-    // Total en tiempo real
-    onSnapshot(colRef, (snap) => {
-      const total = snap.size;
-      if (totalCount) totalCount.textContent = `${total} ${pluralize(total, 'solicitud', 'solicitudes')}`;
-    }, (err) => {
-      console.warn('Realtime total onSnapshot error:', err);
-    });
-
-    // Sin procesar en tiempo real
-    onSnapshot(pendingQ, (snap) => {
-      const pending = snap.size;
-      if (pendingCount) pendingCount.textContent = `${pending} ${pluralize(pending, 'sin procesar', 'sin procesar')}`;
-    }, (err) => {
-      console.warn('Realtime pending onSnapshot error:', err);
-    });
-  } catch (err) {
-    console.warn('Error inicializando conteos en tiempo real:', err);
+  // --- Counts en tiempo real (solo sin procesar -> estadística) ---
+  function pluralize(n, singular, plural) {
+    return n === 1 ? singular : plural;
   }
-}
 
+  function initRealtimeCounts() {
+    try {
+      const colRef = collection(db, 'contact_requests');
+      const pendingQ = query(colRef, where('processed', '==', false));
+
+      // Suscribirse a "sin procesar" y actualizar la stat en Estadísticas en tiempo real
+      onSnapshot(pendingQ, (snap) => {
+        const pending = snap.size;
+        if (pendingCountStat) pendingCountStat.textContent = `${pending} ${pluralize(pending, 'sin procesar', 'sin procesar')}`;
+      }, (err) => {
+        console.warn('Realtime pending onSnapshot error:', err);
+      });
+    } catch (err) {
+      console.warn('Error inicializando conteos en tiempo real:', err);
+    }
+  }
 
   // --- Render optimized: build rows as HTML and set innerHTML once ---
   function rowHtml(item){
@@ -666,43 +657,13 @@ function initRealtimeCounts() {
 
   // --- Initialize ---
   document.addEventListener('DOMContentLoaded', () => {
-    initRealtimeCounts();   // conteo en tiempo real
+    initRealtimeCounts();   // conteo en tiempo real (sin procesar)
     goToFirstPage();        // realtime first page
   });
 
   window.addEventListener('beforeunload', () => { cleanupPageListener(); });
   window.addEventListener('error', (e) => console.error(e));
 })();
-
-/* --- Quick performance & accessibility helpers inserted by assistant --- */
-
-/* 1) Use getCountFromServer to fetch collection counts (less expensive than subscribing entire collection)
-   Replace heavy onSnapshot listeners for totals with this function, or call it periodically.
-   Requires: import { getCountFromServer, query, collection, where } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-*/
-async function initRealtimeCounts() {
-  try {
-    const colRef = collection(db, 'contact_requests');
-    // total count
-    const totalSnap = await getCountFromServer(query(colRef));
-    const total = (totalSnap && totalSnap.data && totalSnap.data().count) ? totalSnap.data().count : 0;
-    const totalEl = document.getElementById('totalCount');
-    if (totalEl) totalEl.textContent = `${total} ${total === 1 ? 'solicitud' : 'solicitudes'}`;
-
-    // pending/unprocessed count (example: where processed == false)
-    try {
-      const pendingQ = query(colRef, where('processed','==', false));
-      const pendingSnap = await getCountFromServer(pendingQ);
-      const pending = (pendingSnap && pendingSnap.data && pendingSnap.data().count) ? pendingSnap.data().count : 0;
-      const pendingEl = document.getElementById('pendingCount');
-      if (pendingEl) pendingEl.textContent = `${pending} ${pending === 1 ? 'sin procesar' : 'sin procesar'}`;
-    } catch (innerErr) {
-      console.debug('No se pudo obtener pending count with where(...) — check field name or Firestore SDK imports.', innerErr);
-    }
-  } catch (err) {
-    console.warn('Error obteniendo conteos con getCountFromServer:', err);
-  }
-}
 
 /* 2) Accessible export confirmation helper:
    If there is a button with id 'exportBtn' that triggers CSV creation/download,
@@ -732,9 +693,6 @@ async function initRealtimeCounts() {
     }, 800);
   });
 })();
-
-/* End of assistant-inserted helpers */
-
 </script>
 
 </body>
