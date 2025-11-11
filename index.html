@@ -79,8 +79,28 @@ h1{font-size:18px;margin:0;color:#fff;font-weight:600}
 .btn.row.mark{ background:#fff;color:var(--azul); border:1px solid rgba(45,104,248,0.10); }
 .btn.row.danger{ background:transparent; color:var(--danger); border:1px solid rgba(239,68,68,0.10); }
 
-.stats{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap }
-.stat{ background:var(--card-bg); padding:12px; border-radius:12px; min-width:140px; box-shadow:var(--shadow-1); border:1px solid rgba(10,26,51,0.03); font-size:13px; color:var(--text) }
+.stats{ 
+  display:flex; 
+  gap:10px; 
+  margin-bottom:10px; 
+  flex-wrap:wrap;
+  align-items: stretch; /* Añadido para homogeneizar alturas */
+}
+.stat{ 
+  background:var(--card-bg); 
+  padding:12px; 
+  border-radius:12px; 
+  min-width:140px; 
+  min-height: 60px; /* Añadido para altura mínima consistente */
+  box-shadow:var(--shadow-1); 
+  border:1px solid rgba(10,26,51,0.03); 
+  font-size:13px; 
+  color:var(--text);
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra el contenido verticalmente */
+  flex: 1; /* Hace que todas crezcan igual */
+}
 .stat .label{ font-size:12px; color:var(--muted); margin-bottom:6px }
 .stat .value{ font-size:15px; font-weight:600; color:var(--azul) }
 
