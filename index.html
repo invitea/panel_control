@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <style>
+/* [Todo el CSS anterior se mantiene igual] */
 /* ---- Sistema de diseño refinado ---- */
 :root{
   --azul: #2d6df3;
@@ -775,7 +776,8 @@ footer{
         <img src="https://i.ibb.co/1Qf3kqZ/invitea-logo.png" alt="Invitea logo">
       </div>
       <div style="min-width:0; flex: 1;">
-        <h1>Panel de Control</h1>
+        <h1>Panel de Contactos</h1>
+        <div class="subtitle">Gestiona y organiza las solicitudes de contacto</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn ghost" id="refreshBtn" type="button" data-tooltip="Recargar la lista" aria-label="Actualizar lista">Actualizar</button>
@@ -812,7 +814,7 @@ footer{
   </div>
 
   <footer>
-    Invitea · Panel de control · 
+    Invitea · Panel de administración · 
     <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
       Versión 1.0.0 · Publicado: 10 de noviembre de 2025
     </span>
@@ -960,34 +962,45 @@ import {
 
   function initRealtimeCounts() {
     try {
-      const colRef = collection(db, 'contact_requests');
-      const pendingQ = query(colRef, where('processed', '==', false));
-
-      console.log('Iniciando conteo en tiempo real...');
+      console.log('🔄 Iniciando conteo en tiempo real...');
       
       // Limpiar suscripción anterior si existe
       if (unsubPendingListener) {
+        console.log('🧹 Limpiando suscripción anterior...');
         unsubPendingListener();
       }
       
+      const colRef = collection(db, 'contact_requests');
+      console.log('📊 Creando consulta para documentos sin procesar...');
+      
+      // Crear consulta para documentos sin procesar
+      const pendingQ = query(colRef, where('processed', '==', false));
+      
       // Suscribirse a "sin procesar" y actualizar la stat en tiempo real
-      unsubPendingListener = onSnapshot(pendingQ, (snap) => {
-        const pending = snap.size;
-        console.log('Conteo actualizado:', pending, 'sin procesar');
-        if (pendingCountStat) {
-          pendingCountStat.textContent = pending;
-          // Agregar animación de actualización
-          pendingCountStat.style.transform = 'scale(1.1)';
-          setTimeout(() => {
-            pendingCountStat.style.transform = 'scale(1)';
-          }, 300);
+      unsubPendingListener = onSnapshot(pendingQ, 
+        (snap) => {
+          const pending = snap.size;
+          console.log('✅ Conteo actualizado:', pending, 'sin procesar');
+          if (pendingCountStat) {
+            pendingCountStat.textContent = pending;
+            // Agregar animación de actualización
+            pendingCountStat.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+              pendingCountStat.style.transform = 'scale(1)';
+            }, 300);
+          }
+        }, 
+        (err) => {
+          console.error('❌ Error en conteo en tiempo real:', err);
+          console.error('Detalles del error:', err.code, err.message);
+          if (pendingCountStat) pendingCountStat.textContent = 'Error';
         }
-      }, (err) => {
-        console.error('Error en conteo en tiempo real:', err);
-        if (pendingCountStat) pendingCountStat.textContent = 'Error';
-      });
+      );
+      
+      console.log('🎯 Suscripción activa para conteo en tiempo real');
+      
     } catch (err) {
-      console.error('Error inicializando conteos en tiempo real:', err);
+      console.error('💥 Error crítico inicializando conteos en tiempo real:', err);
       if (pendingCountStat) pendingCountStat.textContent = 'Error';
     }
   }
@@ -1166,6 +1179,8 @@ import {
           return;
         }
         const current = snap.data().processed || false;
+        console.log(`🔄 Cambiando estado del documento ${id} de ${current} a ${!current}`);
+        
         await updateDoc(ref, { processed: !current });
         
         // Actualizar UI inmediatamente
@@ -1178,15 +1193,10 @@ import {
           statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); 
         }
         
-        // Forzar actualización del conteo en tiempo real
-        // Firebase debería actualizar automáticamente, pero forzamos un pequeño delay
-        setTimeout(() => {
-          // El listener de onSnapshot debería dispararse automáticamente
-          console.log('Estado actualizado, esperando actualización de Firebase...');
-        }, 100);
+        console.log('✅ Estado actualizado en UI, esperando actualización de Firebase...');
         
       } catch(err){
-        console.error(err);
+        console.error('❌ Error actualizando estado:', err);
         alert('Error actualizando estado');
       } finally { btn.disabled = false; }
     } else if(action === 'delete'){
@@ -1194,12 +1204,13 @@ import {
       if(btn.disabled) return;
       btn.disabled = true;
       try {
+        console.log(`🗑️ Eliminando documento ${id}`);
         await deleteDoc(doc(db, 'contact_requests', id));
         const row = document.querySelector(`.row-item[data-id="${id}"]`);
         if(row) row.remove();
-        // El conteo en tiempo real se actualizará automáticamente
+        console.log('✅ Documento eliminado');
       } catch(err){
-        console.error(err);
+        console.error('❌ Error eliminando:', err);
         alert('Error eliminando');
       } finally { btn.disabled = false; }
     }
@@ -1294,8 +1305,9 @@ import {
   // --- Buttons / pagination bindings ---
   exportBtn.addEventListener('click', exportCSV);
   refreshBtn.addEventListener('click', async () => { 
-    await goToFirstPage(); 
-    // Reiniciar el conteo en tiempo real también
+    console.log('🔄 Reiniciando aplicación...');
+    cleanupAllListeners();
+    await goToFirstPage();
     initRealtimeCounts();
   });
   prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
@@ -1303,7 +1315,7 @@ import {
 
   // --- Initialize ---
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('Inicializando aplicación...');
+    console.log('🚀 Inicializando aplicación...');
     initRealtimeCounts();
     goToFirstPage();
   });
