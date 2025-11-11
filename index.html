@@ -644,21 +644,57 @@ footer{
     width:100%; 
     align-items:center; 
     padding-top:8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap; /* Cambiado a nowrap para una sola línea */
     gap: 8px;
   } 
   
   .action-buttons{ 
-    order:2; 
-    gap:8px; 
-    flex-wrap: wrap;
+    order: 2; 
+    gap:6px; 
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    flex: 1;
+    min-width: auto;
   }
   
   .badges{ 
-    order:1; 
+    order: 1; 
     gap:6px; 
-    flex-wrap:wrap; 
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    flex: 1;
+    min-width: auto;
   } 
+  
+  /* Ajustes específicos para botones en móvil */
+  .btn.row {
+    min-width: 70px;
+    font-size: 11px;
+    padding: 4px 8px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  
+  .badge {
+    font-size: 10px;
+    padding: 4px 8px;
+    height: 26px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  
+  /* Asegurar que todo quepa en una línea */
+  .badges,
+  .action-buttons {
+    overflow: hidden;
+  }
+  
+  .badge.plan,
+  .badge.status {
+    max-width: 100px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
 }
 
 @media (max-width:480px){
@@ -680,16 +716,54 @@ footer{
     justify-content: center;
   }
   
-  /* Asegurar que los botones mantengan su funcionalidad */
+  /* Ajustes más específicos para móviles pequeños */
+  .actions {
+    gap: 6px;
+  }
+  
   .btn.row {
-    min-width: 70px;
-    font-size: 11px;
-    padding: 4px 8px;
+    min-width: 65px;
+    font-size: 10px;
+    padding: 4px 6px;
   }
   
   .badge {
-    font-size: 10px;
-    padding: 4px 8px;
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  /* Para pantallas muy pequeñas, ajustar aún más */
+  @media (max-width: 360px) {
+    .btn.row .mark-label,
+    .btn.row:last-child span:last-child {
+      display: none; /* Ocultar texto en botones, solo mostrar iconos */
+    }
+    
+    .btn.row {
+      min-width: 40px;
+      padding: 4px;
+    }
+    
+    .badge {
+      font-size: 8px;
+      padding: 2px 4px;
+    }
+  }
+}
+
+/* Estilos específicos para mejorar la legibilidad en móvil */
+@media (max-width:768px){
+  .meta .meta-lines .label { 
+    width: 70px; 
+    font-size:11px; 
+  } 
+  
+  .meta .meta-lines .value { 
+    font-size:12px; 
+  }
+  
+  .meta .name {
+    font-size: 14px;
   }
 }
   </style>
@@ -701,7 +775,8 @@ footer{
         <img src="https://i.ibb.co/1Qf3kqZ/invitea-logo.png" alt="Invitea logo">
       </div>
       <div style="min-width:0; flex: 1;">
-        <h1>Panel de Control</h1>
+        <h1>Panel de Contactos</h1>
+        <div class="subtitle">Gestiona y organiza las solicitudes de contacto</div>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn ghost" id="refreshBtn" type="button" data-tooltip="Recargar la lista" aria-label="Actualizar lista">Actualizar</button>
@@ -738,7 +813,7 @@ footer{
   </div>
 
   <footer>
-    Invitea · Panel de control · 
+    Invitea · Panel de administración · 
     <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
       Versión 1.0.0 · Publicado: 10 de noviembre de 2025
     </span>
