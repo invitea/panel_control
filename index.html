@@ -775,8 +775,7 @@ footer{
         <img src="https://i.ibb.co/1Qf3kqZ/invitea-logo.png" alt="Invitea logo">
       </div>
       <div style="min-width:0; flex: 1;">
-        <h1>Panel de Contactos</h1>
-        <div class="subtitle">Gestiona y organiza las solicitudes de contacto</div>
+        <h1>Panel de Control</h1>
       </div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn ghost" id="refreshBtn" type="button" data-tooltip="Recargar la lista" aria-label="Actualizar lista">Actualizar</button>
@@ -813,7 +812,7 @@ footer{
   </div>
 
   <footer>
-    Invitea · Panel de administración · 
+    Invitea · Panel de control · 
     <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
       Versión 1.0.0 · Publicado: 10 de noviembre de 2025
     </span>
@@ -957,6 +956,8 @@ import {
   });
 
   // --- Counts en tiempo real CORREGIDO ---
+  let unsubPendingListener = null;
+
   function initRealtimeCounts() {
     try {
       const colRef = collection(db, 'contact_requests');
@@ -964,8 +965,13 @@ import {
 
       console.log('Iniciando conteo en tiempo real...');
       
+      // Limpiar suscripción anterior si existe
+      if (unsubPendingListener) {
+        unsubPendingListener();
+      }
+      
       // Suscribirse a "sin procesar" y actualizar la stat en tiempo real
-      onSnapshot(pendingQ, (snap) => {
+      unsubPendingListener = onSnapshot(pendingQ, (snap) => {
         const pending = snap.size;
         console.log('Conteo actualizado:', pending, 'sin procesar');
         if (pendingCountStat) {
@@ -1063,7 +1069,20 @@ import {
 
   // --- Pagination helpers ---
   let unsubPageListener = null;
-  function cleanupPageListener(){ if(typeof unsubPageListener === 'function'){ unsubPageListener(); unsubPageListener = null; } }
+  function cleanupPageListener(){ 
+    if(typeof unsubPageListener === 'function'){ 
+      unsubPageListener(); 
+      unsubPageListener = null; 
+    }
+  }
+
+  function cleanupAllListeners() {
+    cleanupPageListener();
+    if (unsubPendingListener) {
+      unsubPendingListener();
+      unsubPendingListener = null;
+    }
+  }
 
   function listenToPageQuery(q){
     cleanupPageListener();
@@ -1148,11 +1167,24 @@ import {
         }
         const current = snap.data().processed || false;
         await updateDoc(ref, { processed: !current });
+        
+        // Actualizar UI inmediatamente
         btn.setAttribute('aria-pressed', String(!current));
         btn.querySelector('.mark-label') && (btn.querySelector('.mark-label').textContent = !current ? 'No' : 'OK');
         const row = btn.closest('.row-item');
         const statusBadge = row && row.querySelector('.badge.status');
-        if(statusBadge){ statusBadge.textContent = !current ? 'Procesado' : 'Sin procesar'; statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); }
+        if(statusBadge){ 
+          statusBadge.textContent = !current ? 'Procesado' : 'Sin procesar'; 
+          statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); 
+        }
+        
+        // Forzar actualización del conteo en tiempo real
+        // Firebase debería actualizar automáticamente, pero forzamos un pequeño delay
+        setTimeout(() => {
+          // El listener de onSnapshot debería dispararse automáticamente
+          console.log('Estado actualizado, esperando actualización de Firebase...');
+        }, 100);
+        
       } catch(err){
         console.error(err);
         alert('Error actualizando estado');
@@ -1165,6 +1197,7 @@ import {
         await deleteDoc(doc(db, 'contact_requests', id));
         const row = document.querySelector(`.row-item[data-id="${id}"]`);
         if(row) row.remove();
+        // El conteo en tiempo real se actualizará automáticamente
       } catch(err){
         console.error(err);
         alert('Error eliminando');
@@ -1260,7 +1293,11 @@ import {
 
   // --- Buttons / pagination bindings ---
   exportBtn.addEventListener('click', exportCSV);
-  refreshBtn.addEventListener('click', async () => { await goToFirstPage(); });
+  refreshBtn.addEventListener('click', async () => { 
+    await goToFirstPage(); 
+    // Reiniciar el conteo en tiempo real también
+    initRealtimeCounts();
+  });
   prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
   nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
 
@@ -1271,7 +1308,7 @@ import {
     goToFirstPage();
   });
 
-  window.addEventListener('beforeunload', () => { cleanupPageListener(); });
+  window.addEventListener('beforeunload', () => { cleanupAllListeners(); });
   window.addEventListener('error', (e) => console.error(e));
 })();
   </script>
