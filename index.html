@@ -882,24 +882,33 @@ import {
     if(!t) hideTooltip();
   });
 
-  // --- Counts en tiempo real ---
-  function pluralize(n, singular, plural) {
-    return n === 1 ? singular : plural;
-  }
-
+  // --- Counts en tiempo real CORREGIDO ---
   function initRealtimeCounts() {
     try {
       const colRef = collection(db, 'contact_requests');
       const pendingQ = query(colRef, where('processed', '==', false));
 
+      console.log('Iniciando conteo en tiempo real...');
+      
+      // Suscribirse a "sin procesar" y actualizar la stat en tiempo real
       onSnapshot(pendingQ, (snap) => {
         const pending = snap.size;
-        if (pendingCountStat) pendingCountStat.textContent = `${pending} ${pluralize(pending, 'sin procesar', 'sin procesar')}`;
+        console.log('Conteo actualizado:', pending, 'sin procesar');
+        if (pendingCountStat) {
+          pendingCountStat.textContent = pending;
+          // Agregar animación de actualización
+          pendingCountStat.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            pendingCountStat.style.transform = 'scale(1)';
+          }, 300);
+        }
       }, (err) => {
-        console.warn('Realtime pending onSnapshot error:', err);
+        console.error('Error en conteo en tiempo real:', err);
+        if (pendingCountStat) pendingCountStat.textContent = 'Error';
       });
     } catch (err) {
-      console.warn('Error inicializando conteos en tiempo real:', err);
+      console.error('Error inicializando conteos en tiempo real:', err);
+      if (pendingCountStat) pendingCountStat.textContent = 'Error';
     }
   }
 
@@ -1183,6 +1192,7 @@ import {
 
   // --- Initialize ---
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('Inicializando aplicación...');
     initRealtimeCounts();
     goToFirstPage();
   });
