@@ -913,12 +913,12 @@ import {
         } catch(e){ }
       }
       
-      if(d.ts) {
+      if(d.timestamp) {
         try {
-          if(typeof d.ts.toDate === 'function') {
-            return d.ts.toDate();
-          } else if(d.ts.seconds) {
-            return new Date(d.ts.seconds * 1000);
+          if(typeof d.timestamp.toDate === 'function') {
+            return d.timestamp.toDate();
+          } else if(d.timestamp.seconds) {
+            return new Date(d.timestamp.seconds * 1000);
           }
         } catch(e){ }
       }
@@ -974,14 +974,14 @@ import {
       const d = item.data || {};
       const name = escapeHtml(d.name || d.nombre || 'Sin nombre');
       const avatarText = escapeHtml(initials(d.name || d.nombre || ''));
-      const plan = escapeHtml(normalizePlan(d.selectedPlan));
+      const plan = escapeHtml(normalizePlan(d.selectedPlan || d.plan));
       const status = d.processed ? 'Procesado' : 'Sin procesar';
       const statusClass = d.processed ? 'processed' : 'pending';
       const email = escapeHtml(d.email || '—');
-      const phone = escapeHtml(d.phone || '—');
+      const phone = escapeHtml(d.phone || d.telefono || '—');
       const type = escapeHtml(d.type || d.docType || d.documentType || d.document_type || '—');
       const date = escapeHtml(d.date_ddmmyyyy || (d.date_iso ? new Date(d.date_iso).toLocaleDateString('es-MX') : (docDate(d) ? docDate(d).toLocaleDateString('es-MX') : '—')));
-      const created = escapeHtml(fmtTimestamp(d.createdAt || d.ts));
+      const created = escapeHtml(fmtTimestamp(d.createdAt || d.timestamp));
 
       // Inline small SVG icons
       const checkSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -1035,7 +1035,7 @@ import {
       });
       
       const html = items.map(entry => {
-        if (entry.data && entry.data.selectedPlan) planCount++;
+        if (entry.data && (entry.data.selectedPlan || entry.data.plan)) planCount++;
         const createdDt = docDate(entry.data);
         if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
         return rowHtml(entry);
@@ -1280,13 +1280,13 @@ import {
               };
               const name = csvSafe(d.name||d.nombre||'');
               const email = csvSafe(d.email||'');
-              const phone = csvSafe(d.phone||'');
-              const plan = csvSafe(d.selectedPlan||'');
+              const phone = csvSafe(d.phone||d.telefono||'');
+              const plan = csvSafe(d.selectedPlan||d.plan||'');
               const type = csvSafe((d.type||d.docType||d.documentType||d.document_type)||'');
               const date = csvSafe(d.date_ddmmyyyy||d.date_iso||'');
               const msg = csvSafe(d.message||'');
               const processed = d.processed ? 'SI' : 'NO';
-              const created = csvSafe(fmtTimestamp(d.createdAt || d.ts));
+              const created = csvSafe(fmtTimestamp(d.createdAt || d.timestamp));
               return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
             });
             const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
