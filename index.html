@@ -786,7 +786,7 @@ footer{
   <div class="container" role="main">
     <header class="app-header" role="banner">
       <div class="brand-text">
-        Invitéa
+        Invitea
       </div>
       <div style="min-width:0; flex: 1;">
         <h1>Panel de Control</h1>
@@ -828,7 +828,7 @@ footer{
   <footer>
     Invitéa · Panel de Control · 
     <span class="footer-meta" id="versionInfo" aria-live="polite" aria-atomic="true">
-      Versión 1.0.0 · Publicado: 11 de noviembre de 2025
+      Versión 1.0.0 · Publicado: 10 de noviembre de 2025
     </span>
   </footer>
 
@@ -853,475 +853,398 @@ import {
     measurementId: "G-8JS1MDZVGQ"
   };
   
-  try {
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    
-    console.log('Firebase inicializado correctamente');
+  if (!firebaseConfig || !firebaseConfig.projectId) {
+    document.getElementById('listBody').innerHTML = '<div class="empty">Configura firebaseConfig en el HTML para conectar al panel.</div>';
+    console.warn('firebaseConfig no configurado.');
+    return;
+  }
 
-    const pageSize = 8;
-    let currentPage = 1;
-    let firstDocSnap = null;
-    let lastDocSnap = null;
-    let currentItems = [];
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // UI refs
-    const listBody = document.getElementById('listBody');
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    const pageNumber = document.getElementById('pageNumber');
-    const searchInput = document.getElementById('search');
-    const exportBtn = document.getElementById('exportCsv');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const pendingCountStat = document.getElementById('pendingCountStat');
-    const pageTotal = document.getElementById('pageTotal');
-    const lastUpdate = document.getElementById('lastUpdate');
-    const withPlan = document.getElementById('withPlan');
+  const pageSize = 8;
+  let currentPage = 1;
+  let firstDocSnap = null;
+  let lastDocSnap = null;
+  let currentItems = [];
 
-    // --- Utilities ---
-    function escapeHtml(s){
-      if(s == null) return '';
-      return String(s)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'", '&#39;');
+  // UI refs
+  const listBody = document.getElementById('listBody');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const pageNumber = document.getElementById('pageNumber');
+  const searchInput = document.getElementById('search');
+  const exportBtn = document.getElementById('exportCsv');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const pendingCountStat = document.getElementById('pendingCountStat');
+  const pageTotal = document.getElementById('pageTotal');
+  const lastUpdate = document.getElementById('lastUpdate');
+  const withPlan = document.getElementById('withPlan');
+
+  // --- Utilities ---
+  function escapeHtml(s){
+    if(s == null) return '';
+    return String(s)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'", '&#39;');
+  }
+  
+  function fmtTimestamp(ts){
+    if(!ts) return '—';
+    try{
+      const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts || Date.now());
+      if(isNaN(d)) return '—';
+      return d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    } catch(e){ return '—'; }
+  }
+  
+  function docDate(d){
+    if(!d) return null;
+    if(d.createdAt && typeof d.createdAt.toDate === 'function') {
+      try { return d.createdAt.toDate(); } catch(e){ }
+    }
+    if(d.ts && typeof d.ts.toDate === 'function') {
+      try { return d.ts.toDate(); } catch(e){ }
+    }
+    if(d.date_iso){
+      const dt = new Date(d.date_iso);
+      if(!isNaN(dt)) return dt;
+    }
+    return null;
+  }
+  
+  function initials(name){
+    if(!name) return 'U';
+    return name.trim().split(/\s+/).map(s => s[0] || '').slice(0,2).join('').toUpperCase();
+  }
+  
+  function normalizePlan(raw){
+    if(!raw) return 'Sin plan';
+    const s = String(raw).toLowerCase();
+    if(s.includes('bas') || s.includes('bás') || s.includes('basico') ) return 'Básico';
+    if(s.includes('estan') || s.includes('estandar') || s.includes('estánd') ) return 'Estándar';
+    if(s.includes('premium') || s.includes('prem') ) return 'Premium';
+    return 'Sin plan';
+  }
+
+  // --- Counts en tiempo real SIMPLIFICADO ---
+  function updatePendingCount() {
+    if (!currentItems || currentItems.length === 0) {
+      pendingCountStat.textContent = '0';
+      return;
     }
     
-    function fmtTimestamp(ts){
-      if(!ts) return '—';
-      try{
-        const d = (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date(ts || Date.now());
-        if(isNaN(d)) return '—';
-        return d.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-      } catch(e){ return '—'; }
-    }
+    // Contar los registros sin procesar en la página actual
+    const pendingCount = currentItems.filter(item => {
+      const data = item.data || {};
+      return !data.processed;
+    }).length;
     
-    function docDate(d){
-      if(!d) return null;
-      
-      // Intentar diferentes formatos de fecha
-      if(d.createdAt) {
-        try {
-          if(typeof d.createdAt.toDate === 'function') {
-            return d.createdAt.toDate();
-          } else if(d.createdAt.seconds) {
-            return new Date(d.createdAt.seconds * 1000);
-          }
-        } catch(e){ }
-      }
-      
-      if(d.timestamp) {
-        try {
-          if(typeof d.timestamp.toDate === 'function') {
-            return d.timestamp.toDate();
-          } else if(d.timestamp.seconds) {
-            return new Date(d.timestamp.seconds * 1000);
-          }
-        } catch(e){ }
-      }
-      
-      if(d.date_iso){
-        const dt = new Date(d.date_iso);
-        if(!isNaN(dt)) return dt;
-      }
-      
-      // Si no hay fecha específica, usar fecha actual como fallback
-      return new Date();
-    }
+    pendingCountStat.textContent = pendingCount;
     
-    function initials(name){
-      if(!name) return 'U';
-      return name.trim().split(/\s+/).map(s => s[0] || '').slice(0,2).join('').toUpperCase();
-    }
-    
-    function normalizePlan(raw){
-      if(!raw) return 'Sin plan';
-      const s = String(raw).toLowerCase();
-      if(s.includes('bas') || s.includes('bás') || s.includes('basico') ) return 'Básico';
-      if(s.includes('estan') || s.includes('estandar') || s.includes('estánd') ) return 'Estándar';
-      if(s.includes('premium') || s.includes('prem') ) return 'Premium';
-      return 'Sin plan';
-    }
+    // Animación de actualización
+    pendingCountStat.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+      pendingCountStat.style.transform = 'scale(1)';
+    }, 300);
+  }
 
-    // --- Counts en tiempo real SIMPLIFICADO ---
-    function updatePendingCount() {
-      if (!currentItems || currentItems.length === 0) {
-        pendingCountStat.textContent = '0';
-        return;
-      }
-      
-      // Contar los registros sin procesar en la página actual
-      const pendingCount = currentItems.filter(item => {
-        const data = item.data || {};
-        return !data.processed;
-      }).length;
-      
-      pendingCountStat.textContent = pendingCount;
-      
-      // Animación de actualización
-      pendingCountStat.style.transform = 'scale(1.1)';
-      setTimeout(() => {
-        pendingCountStat.style.transform = 'scale(1)';
-      }, 300);
-    }
+  // --- Render optimized ---
+  function rowHtml(item){
+    const id = escapeHtml(item.id);
+    const d = item.data || {};
+    const name = escapeHtml(d.name || d.nombre || 'Sin nombre');
+    const avatarText = escapeHtml(initials(d.name || d.nombre || ''));
+    const plan = escapeHtml(normalizePlan(d.selectedPlan));
+    const status = d.processed ? 'Procesado' : 'Sin procesar';
+    const statusClass = d.processed ? 'processed' : 'pending';
+    const email = escapeHtml(d.email || '—');
+    const phone = escapeHtml(d.phone || '—');
+    const type = escapeHtml(d.type || d.docType || d.documentType || d.document_type || '—');
+    const date = escapeHtml(d.date_ddmmyyyy || (d.date_iso ? new Date(d.date_iso).toLocaleDateString('es-MX') : (docDate(d) ? docDate(d).toLocaleDateString('es-MX') : '—')));
+    const created = escapeHtml(fmtTimestamp(d.createdAt || d.ts));
 
-    // --- Render optimized ---
-    function rowHtml(item){
-      const id = escapeHtml(item.id);
-      const d = item.data || {};
-      const name = escapeHtml(d.name || d.nombre || 'Sin nombre');
-      const avatarText = escapeHtml(initials(d.name || d.nombre || ''));
-      const plan = escapeHtml(normalizePlan(d.selectedPlan || d.plan));
-      const status = d.processed ? 'Procesado' : 'Sin procesar';
-      const statusClass = d.processed ? 'processed' : 'pending';
-      const email = escapeHtml(d.email || '—');
-      const phone = escapeHtml(d.phone || d.telefono || '—');
-      const type = escapeHtml(d.type || d.docType || d.documentType || d.document_type || '—');
-      const date = escapeHtml(d.date_ddmmyyyy || (d.date_iso ? new Date(d.date_iso).toLocaleDateString('es-MX') : (docDate(d) ? docDate(d).toLocaleDateString('es-MX') : '—')));
-      const created = escapeHtml(fmtTimestamp(d.createdAt || d.timestamp));
+    // Inline small SVG icons
+    const checkSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    const trashSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>';
 
-      // Inline small SVG icons
-      const checkSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
-      const trashSvg = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>';
-
-      return `
-        <div class="row-item" role="listitem" data-id="${id}" tabindex="0" aria-labelledby="name-${id}">
-          <div class="avatar" aria-hidden="true">${avatarText}</div>
-          <div class="meta">
-            <div class="name" id="name-${id}">${name}</div>
-            <div class="meta-lines">
-              <div><span class="label">Tipo:</span><span class="value">${type}</span></div>
-              <div><span class="label">Correo:</span><span class="value">${email}</span></div>
-              <div><span class="label">Teléfono:</span><span class="value">${phone}</span></div>
-              <div><span class="label">Fecha:</span><span class="value">${date}</span></div>
-            </div>
-          </div>
-          <div class="actions">
-            <div class="badges">
-              <div class="badge plan">${plan}</div>
-              <div class="badge status ${statusClass}">${status}</div>
-            </div>
-            <div class="action-buttons">
-              <button class="btn row mark" data-action="toggle-processed" data-id="${id}" data-tooltip="${d.processed ? 'Marcar como no procesado' : 'Marcar como procesado'}" aria-pressed="${d.processed ? 'true' : 'false'}">${checkSvg}<span class="mark-label">${d.processed ? 'No' : 'OK'}</span></button>
-              <button class="btn row danger" data-action="delete" data-id="${id}" data-tooltip="Eliminar esta solicitud">${trashSvg}Borrar</button>
-            </div>
+    return `
+      <div class="row-item" role="listitem" data-id="${id}" tabindex="0" aria-labelledby="name-${id}">
+        <div class="avatar" aria-hidden="true">${avatarText}</div>
+        <div class="meta">
+          <div class="name" id="name-${id}">${name}</div>
+          <div class="meta-lines">
+            <div><span class="label">Tipo:</span><span class="value">${type}</span></div>
+            <div><span class="label">Correo:</span><span class="value">${email}</span></div>
+            <div><span class="label">Teléfono:</span><span class="value">${phone}</span></div>
+            <div><span class="label">Fecha:</span><span class="value">${date}</span></div>
           </div>
         </div>
-      `;
-    }
+        <div class="actions">
+          <div class="badges">
+            <div class="badge plan">${plan}</div>
+            <div class="badge status ${statusClass}">${status}</div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn row mark" data-action="toggle-processed" data-id="${id}" data-tooltip="${d.processed ? 'Marcar como no procesado' : 'Marcar como procesado'}" aria-pressed="${d.processed ? 'true' : 'false'}">${checkSvg}<span class="mark-label">${d.processed ? 'No' : 'OK'}</span></button>
+            <button class="btn row danger" data-action="delete" data-id="${id}" data-tooltip="Eliminar esta solicitud">${trashSvg}Borrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
-    function render(items){
-      console.log('Renderizando items:', items);
-      
-      if(!items || items.length === 0){
-        listBody.innerHTML = '<div class="empty">No hay solicitudes en esta página.</div>';
-        pageTotal.textContent = '0';
-        withPlan.textContent = '0';
-        pendingCountStat.textContent = '0';
-        lastUpdate.textContent = '—';
-        currentItems = [];
-        return;
-      }
-      
-      let planCount = 0;
-      let latest = null;
-      
-      // Mostrar información de depuración en consola
-      items.forEach((item, index) => {
-        console.log(`Item ${index}:`, item.id, item.data);
-      });
-      
-      const html = items.map(entry => {
-        if (entry.data && (entry.data.selectedPlan || entry.data.plan)) planCount++;
-        const createdDt = docDate(entry.data);
-        if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
-        return rowHtml(entry);
-      }).join('');
-      
-      listBody.innerHTML = html;
-      pageTotal.textContent = String(items.length);
-      withPlan.textContent = String(planCount);
-      lastUpdate.textContent = latest ? latest.toLocaleString('es-MX', { 
-        year:'numeric', 
-        month:'short', 
-        day:'2-digit', 
-        hour:'2-digit', 
-        minute:'2-digit' 
-      }) : '—';
-      currentItems = items;
-      
-      updatePendingCount();
+  function render(items){
+    if(!items || items.length === 0){
+      listBody.innerHTML = '<div class="empty">No hay solicitudes en esta página.</div>';
+      pageTotal.textContent = '0';
+      withPlan.textContent = '0';
+      pendingCountStat.textContent = '0';
+      lastUpdate.textContent = '—';
+      currentItems = [];
+      return;
     }
+    
+    let planCount = 0;
+    let latest = null;
+    
+    const html = items.map(entry => {
+      if (entry.data && entry.data.selectedPlan) planCount++;
+      const createdDt = docDate(entry.data);
+      if(createdDt && (!latest || createdDt > latest)) latest = createdDt;
+      return rowHtml(entry);
+    }).join('');
+    
+    listBody.innerHTML = html;
+    pageTotal.textContent = String(items.length);
+    withPlan.textContent = String(planCount);
+    lastUpdate.textContent = latest ? latest.toLocaleString('es-MX', { year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+    currentItems = items;
+    
+    // Actualizar el conteo de "Sin procesar" basado en los datos locales
+    updatePendingCount();
+  }
 
-    // --- Pagination helpers ---
-    let unsubPageListener = null;
-    function cleanupPageListener(){ 
-      if(typeof unsubPageListener === 'function'){ 
-        unsubPageListener(); 
-        unsubPageListener = null; 
-      }
+  // --- Pagination helpers ---
+  let unsubPageListener = null;
+  function cleanupPageListener(){ 
+    if(typeof unsubPageListener === 'function'){ 
+      unsubPageListener(); 
+      unsubPageListener = null; 
     }
+  }
 
-    // Configurar listener en tiempo real
-    function setupRealtimeListener(q) {
+  function listenToPageQuery(q){
+    cleanupPageListener();
+    listBody.innerHTML = '<div class="empty">Cargando…</div>';
+    unsubPageListener = onSnapshot(q, snap => {
+      const docs = snap.docs;
+      const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
+      firstDocSnap = docs[0] || null;
+      lastDocSnap = docs[docs.length - 1] || null;
+      render(docsArr);
+      updatePagination(docsArr.length === pageSize);
+    }, err => {
+      console.error('Error listening page', err);
+      listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
+    });
+  }
+
+  function buildPageQuery(startAfterDoc){
+    const colRef = collection(db, 'contact_requests');
+    if(!startAfterDoc) return query(colRef, orderBy('createdAt','desc'), limit(pageSize));
+    return query(colRef, orderBy('createdAt','desc'), startAfter(startAfterDoc), limit(pageSize));
+  }
+
+  function updatePagination(hasNext){
+    nextBtn.disabled = !hasNext;
+    prevBtn.disabled = (currentPage <= 1);
+  }
+
+  async function goToFirstPage(){
+    currentPage = 1;
+    pageNumber.textContent = currentPage;
+    const q = buildPageQuery(null);
+    listenToPageQuery(q);
+  }
+  
+  async function goToNextPage(){
+    if(!lastDocSnap) return;
+    currentPage++;
+    pageNumber.textContent = currentPage;
+    const q = buildPageQuery(lastDocSnap);
+    listenToPageQuery(q);
+  }
+  
+  async function goToPrevPage(){
+    const colRef = collection(db, 'contact_requests');
+    try {
+      currentPage = Math.max(1, currentPage - 1);
+      pageNumber.textContent = currentPage;
       cleanupPageListener();
-      
-      unsubPageListener = onSnapshot(q, 
-        (snap) => {
-          console.log('Datos actualizados en tiempo real. Documentos:', snap.docs.length);
-          
-          const docs = snap.docs;
-          const docsArr = docs.map(d => ({ 
-            id: d.id, 
-            data: d.data(), 
-            _snap: d 
-          }));
-          
-          firstDocSnap = docs[0] || null;
-          lastDocSnap = docs[docs.length - 1] || null;
-          
-          render(docsArr);
-          updatePagination(docsArr.length === pageSize);
-        },
-        (error) => {
-          console.error('Error en listener tiempo real:', error);
-          listBody.innerHTML = '<div class="empty">Error en conexión en tiempo real</div>';
-        }
-      );
+      const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
+      listBody.innerHTML = '<div class="empty">Cargando…</div>';
+      unsubPageListener = onSnapshot(q, snap => {
+        const docs = snap.docs;
+        const docsArr = docs.map(d => ({ id: d.id, data: d.data(), _snap: d }));
+        firstDocSnap = docs[0] || null;
+        lastDocSnap = docs[docs.length - 1] || null;
+        render(docsArr);
+        updatePagination(true);
+      }, err => {
+        console.error('Error loading prev page', err);
+        listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
+      });
+    } catch(err){
+      console.error('Error goToPrevPage', err);
     }
+  }
 
-    function buildPageQuery(startAfterDoc){
-      const colRef = collection(db, 'contact_requests');
-      if(!startAfterDoc) return query(colRef, orderBy('createdAt','desc'), limit(pageSize));
-      return query(colRef, orderBy('createdAt','desc'), startAfter(startAfterDoc), limit(pageSize));
-    }
-
-    function updatePagination(hasNext){
-      nextBtn.disabled = !hasNext;
-      prevBtn.disabled = (currentPage <= 1);
-    }
-
-    // Función mejorada para cargar la primera página
-    async function goToFirstPage(){
+  // --- Delegated actions ---
+  listBody.addEventListener('click', async (ev) => {
+    const btn = ev.target.closest && ev.target.closest('button[data-action]');
+    if(!btn) return;
+    ev.stopPropagation();
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    
+    if(action === 'toggle-processed'){
+      if(btn.disabled) return;
+      btn.disabled = true;
       try {
-        currentPage = 1;
-        pageNumber.textContent = currentPage;
-        
-        console.log('Cargando primera página...');
-        
-        const colRef = collection(db, 'contact_requests');
-        const q = query(colRef, orderBy('createdAt', 'desc'), limit(pageSize));
-        
-        // Limpiar listener anterior
-        cleanupPageListener();
-        
-        listBody.innerHTML = '<div class="empty">Cargando solicitudes...</div>';
-        
-        // Usar getDocs para prueba inicial
-        const snap = await getDocs(q);
-        console.log('Documentos encontrados:', snap.docs.length);
-        
-        if (snap.docs.length === 0) {
-          listBody.innerHTML = '<div class="empty">No hay solicitudes de contacto.</div>';
+        const ref = doc(db, 'contact_requests', id);
+        const snap = await getDoc(ref);
+        if(!snap.exists()){
+          alert('Registro no encontrado');
           return;
         }
+        const current = snap.data().processed || false;
         
-        const docsArr = snap.docs.map(d => ({ 
-          id: d.id, 
-          data: d.data(), 
-          _snap: d 
-        }));
+        await updateDoc(ref, { processed: !current });
         
-        firstDocSnap = snap.docs[0];
-        lastDocSnap = snap.docs[snap.docs.length - 1];
+        // Actualizar UI inmediatamente
+        btn.setAttribute('aria-pressed', String(!current));
+        btn.querySelector('.mark-label') && (btn.querySelector('.mark-label').textContent = !current ? 'No' : 'OK');
+        const row = btn.closest('.row-item');
+        const statusBadge = row && row.querySelector('.badge.status');
+        if(statusBadge){ 
+          statusBadge.textContent = !current ? 'Procesado' : 'Sin procesar'; 
+          statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); 
+        }
         
-        render(docsArr);
-        updatePagination(docsArr.length === pageSize);
+        // Actualizar el conteo local de "Sin procesar"
+        const itemIndex = currentItems.findIndex(item => item.id === id);
+        if (itemIndex !== -1) {
+          currentItems[itemIndex].data.processed = !current;
+          updatePendingCount();
+        }
         
-        // Ahora configurar el listener en tiempo real
-        setupRealtimeListener(q);
-        
-      } catch (error) {
-        console.error('Error cargando primera página:', error);
-        listBody.innerHTML = '<div class="empty">Error cargando datos: ' + error.message + '</div>';
-      }
-    }
-    
-    async function goToNextPage(){
-      if(!lastDocSnap) return;
-      currentPage++;
-      pageNumber.textContent = currentPage;
-      const q = buildPageQuery(lastDocSnap);
-      setupRealtimeListener(q);
-    }
-    
-    async function goToPrevPage(){
-      const colRef = collection(db, 'contact_requests');
-      try {
-        currentPage = Math.max(1, currentPage - 1);
-        pageNumber.textContent = currentPage;
-        cleanupPageListener();
-        const q = query(colRef, orderBy('createdAt','desc'), endBefore(firstDocSnap), limitToLast(pageSize));
-        listBody.innerHTML = '<div class="empty">Cargando…</div>';
-        setupRealtimeListener(q);
       } catch(err){
-        console.error('Error goToPrevPage', err);
-        listBody.innerHTML = '<div class="empty">Error al cargar: ' + (err.message || '') + '</div>';
-      }
-    }
-
-    // --- Delegated actions ---
-    listBody.addEventListener('click', async (ev) => {
-      const btn = ev.target.closest && ev.target.closest('button[data-action]');
-      if(!btn) return;
-      ev.stopPropagation();
-      const action = btn.getAttribute('data-action');
-      const id = btn.getAttribute('data-id');
+        console.error('Error actualizando estado:', err);
+        alert('Error actualizando estado');
+      } finally { btn.disabled = false; }
       
-      if(action === 'toggle-processed'){
-        if(btn.disabled) return;
-        btn.disabled = true;
-        try {
-          const ref = doc(db, 'contact_requests', id);
-          const snap = await getDoc(ref);
-          if(!snap.exists()){
-            alert('Registro no encontrado');
-            return;
-          }
-          const current = snap.data().processed || false;
-          
-          await updateDoc(ref, { processed: !current });
-          
-          // Actualizar UI inmediatamente
-          btn.setAttribute('aria-pressed', String(!current));
-          btn.querySelector('.mark-label') && (btn.querySelector('.mark-label').textContent = !current ? 'No' : 'OK');
-          const row = btn.closest('.row-item');
-          const statusBadge = row && row.querySelector('.badge.status');
-          if(statusBadge){ 
-            statusBadge.textContent = !current ? 'Procesado' : 'Sin procesar'; 
-            statusBadge.className = 'badge status ' + (!current ? 'processed' : 'pending'); 
-          }
-          
-          // Actualizar el conteo local de "Sin procesar"
-          const itemIndex = currentItems.findIndex(item => item.id === id);
-          if (itemIndex !== -1) {
-            currentItems[itemIndex].data.processed = !current;
-            updatePendingCount();
-          }
-          
-        } catch(err){
-          console.error('Error actualizando estado:', err);
-          alert('Error actualizando estado');
-        } finally { btn.disabled = false; }
-        
-      } else if(action === 'delete'){
-        if(!confirm('¿Eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
-        if(btn.disabled) return;
-        btn.disabled = true;
-        try {
-          await deleteDoc(doc(db, 'contact_requests', id));
-          const row = document.querySelector(`.row-item[data-id="${id}"]`);
-          if(row) row.remove();
-          
-          // Actualizar el array local y el conteo
-          const itemIndex = currentItems.findIndex(item => item.id === id);
-          if (itemIndex !== -1) {
-            currentItems.splice(itemIndex, 1);
-            updatePendingCount();
-            pageTotal.textContent = String(currentItems.length);
-          }
-          
-        } catch(err){
-          console.error('Error eliminando:', err);
-          alert('Error eliminando');
-        } finally { btn.disabled = false; }
-      }
-    });
-
-    // --- Search ---
-    function searchInPage(q){
-      if(!q) { render(currentItems); return; }
-      const lower = q.toLowerCase();
-      const filtered = currentItems.filter(d => {
-        const name = (d.data.name||d.data.nombre||'').toLowerCase();
-        const email = (d.data.email||'').toLowerCase();
-        return name.includes(lower) || email.includes(lower);
-      });
-      render(filtered);
-    }
-    
-    function debounce(fn, wait=200){
-      let t;
-      return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
-    }
-    
-    searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
-
-    // --- Export CSV ---
-    async function exportCSV(){
+    } else if(action === 'delete'){
+      if(!confirm('¿Eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+      if(btn.disabled) return;
+      btn.disabled = true;
       try {
-        const maxExport = 5000;
-        if(!confirm('Exportar hasta ' + maxExport + ' solicitudes como máximo. ¿Continuar?')) return;
-        setTimeout(async () => {
-          try {
-            const colRef = collection(db, 'contact_requests');
-            const q = query(colRef, orderBy('createdAt','desc'), limit(maxExport));
-            const snap = await getDocs(q);
-            const rows = snap.docs.map(docSnap => {
-              const d = docSnap.data();
-              const csvSafe = s => {
-                if(s == null) return '';
-                const str = String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
-                if(/^[=+\-@]/.test(str)) return `'${str}`;
-                return str;
-              };
-              const name = csvSafe(d.name||d.nombre||'');
-              const email = csvSafe(d.email||'');
-              const phone = csvSafe(d.phone||d.telefono||'');
-              const plan = csvSafe(d.selectedPlan||d.plan||'');
-              const type = csvSafe((d.type||d.docType||d.documentType||d.document_type)||'');
-              const date = csvSafe(d.date_ddmmyyyy||d.date_iso||'');
-              const msg = csvSafe(d.message||'');
-              const processed = d.processed ? 'SI' : 'NO';
-              const created = csvSafe(fmtTimestamp(d.createdAt || d.timestamp));
-              return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
-            });
-            const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
-            const csv = [header.join(','), ...rows].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'invitea_contact_requests.csv'; a.click(); URL.revokeObjectURL(url);
-          } catch(err){
-            console.error(err); alert('Error exportando');
-          }
-        }, 16);
-      } catch(err){ console.error(err); alert('Error exportando'); }
+        await deleteDoc(doc(db, 'contact_requests', id));
+        const row = document.querySelector(`.row-item[data-id="${id}"]`);
+        if(row) row.remove();
+        
+        // Actualizar el array local y el conteo
+        const itemIndex = currentItems.findIndex(item => item.id === id);
+        if (itemIndex !== -1) {
+          currentItems.splice(itemIndex, 1);
+          updatePendingCount();
+          pageTotal.textContent = String(currentItems.length);
+        }
+        
+      } catch(err){
+        console.error('Error eliminando:', err);
+        alert('Error eliminando');
+      } finally { btn.disabled = false; }
     }
+  });
 
-    // --- Buttons / pagination bindings ---
-    exportBtn.addEventListener('click', exportCSV);
-    refreshBtn.addEventListener('click', async () => { 
-      await goToFirstPage();
+  // --- Search ---
+  function searchInPage(q){
+    if(!q) { render(currentItems); return; }
+    const lower = q.toLowerCase();
+    const filtered = currentItems.filter(d => {
+      const name = (d.data.name||d.data.nombre||'').toLowerCase();
+      const email = (d.data.email||'').toLowerCase();
+      return name.includes(lower) || email.includes(lower);
     });
-    prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
-    nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
-
-    // --- Initialize ---
-    document.addEventListener('DOMContentLoaded', async () => {
-      console.log('DOM cargado, inicializando Firebase...');
-      await goToFirstPage();
-    });
-
-    window.addEventListener('beforeunload', () => { cleanupPageListener(); });
-    
-  } catch (error) {
-    console.error('Error inicializando Firebase:', error);
-    document.getElementById('listBody').innerHTML = 
-      '<div class="empty">Error conectando a Firebase: ' + error.message + '</div>';
+    render(filtered);
   }
+  
+  function debounce(fn, wait=200){
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(()=> fn(...args), wait); };
+  }
+  
+  searchInput.addEventListener('input', debounce((e) => searchInPage(e.target.value.trim()), 200));
+
+  // --- Export CSV ---
+  async function exportCSV(){
+    try {
+      const maxExport = 5000;
+      if(!confirm('Exportar hasta ' + maxExport + ' solicitudes como máximo. ¿Continuar?')) return;
+      setTimeout(async () => {
+        try {
+          const colRef = collection(db, 'contact_requests');
+          const q = query(colRef, orderBy('createdAt','desc'), limit(maxExport));
+          const snap = await getDocs(q);
+          const rows = snap.docs.map(docSnap => {
+            const d = docSnap.data();
+            const csvSafe = s => {
+              if(s == null) return '';
+              const str = String(s).replace(/"/g,'""').replace(/\r\n|\r|\n/g, '\\n');
+              if(/^[=+\-@]/.test(str)) return `'${str}`;
+              return str;
+            };
+            const name = csvSafe(d.name||d.nombre||'');
+            const email = csvSafe(d.email||'');
+            const phone = csvSafe(d.phone||'');
+            const plan = csvSafe(d.selectedPlan||'');
+            const type = csvSafe((d.type||d.docType||d.documentType||d.document_type)||'');
+            const date = csvSafe(d.date_ddmmyyyy||d.date_iso||'');
+            const msg = csvSafe(d.message||'');
+            const processed = d.processed ? 'SI' : 'NO';
+            const created = csvSafe(fmtTimestamp(d.createdAt || d.ts));
+            return ['"' + name + '"','"' + email + '"','"' + phone + '"','"' + plan + '"','"' + type + '"','"' + date + '"', processed, '"' + created + '"','"' + msg + '"'].join(',');
+          });
+          const header = ['Nombre','Email','Teléfono','Plan','TipoDocumento','FechaEvento','Procesado','CreadoEn','Mensaje'];
+          const csv = [header.join(','), ...rows].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'invitea_contact_requests.csv'; a.click(); URL.revokeObjectURL(url);
+        } catch(err){
+          console.error(err); alert('Error exportando');
+        }
+      }, 16);
+    } catch(err){ console.error(err); alert('Error exportando'); }
+  }
+
+  // --- Buttons / pagination bindings ---
+  exportBtn.addEventListener('click', exportCSV);
+  refreshBtn.addEventListener('click', async () => { 
+    await goToFirstPage();
+  });
+  prevBtn.addEventListener('click', async () => { prevBtn.disabled = true; await goToPrevPage(); });
+  nextBtn.addEventListener('click', async () => { nextBtn.disabled = true; await goToNextPage(); });
+
+  // --- Initialize ---
+  document.addEventListener('DOMContentLoaded', () => {
+    goToFirstPage();
+  });
+
+  window.addEventListener('beforeunload', () => { cleanupPageListener(); });
 })();
   </script>
 </body>
